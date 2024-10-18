@@ -8,6 +8,8 @@ import CustomDrawer from './components/Drawer';
 import Home from './Home';
 import Department from './components/Department';
 import Employee from './components/Employee';
+import TimeSheet from './components/TimeSheet';
+import WeeklyReport from './components/WeeklyReport';
 
 function App() {
   const [open, setOpen] = useState(false);
@@ -32,6 +34,8 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/department" element={<Department />} />
               <Route path="/employee" element={<Employee />} />
+              <Route path="/timesheet" element={<TimeSheet />} />
+              <Route path="/report" element={<WeeklyReport />} />
             </Routes>
           </Box>
         </Box>

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# dotnet-commands.sh
+
+# Función para mostrar el uso del script
+show_usage() {
+    echo "Uso: ./dotnet-commands.sh [opción]"
+    echo "Opciones:"
+    echo "  restore     - Restaura las dependencias del proyecto"
+    echo "  build       - Compila el proyecto"
+    echo "  run         - Ejecuta el proyecto"
+    echo 

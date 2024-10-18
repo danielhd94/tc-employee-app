@@ -6,6 +6,10 @@ import Sidebar from './Sidebar';
 import { openedMixin, closedMixin } from './DrawerStyles'; // Importa las constantes desde un archivo separado
 import { useTheme } from '@mui/material/styles';
 
+import { List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Home, Business, People, AccessTime } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
+
 const drawerWidth = 240;
 
 const DrawerHeader = styled('div')(({ theme }) => ({

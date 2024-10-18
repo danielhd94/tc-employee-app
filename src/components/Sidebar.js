@@ -9,6 +9,8 @@ import ListItemText from '@mui/material/ListItemText';
 import HomeIcon from '@mui/icons-material/Home';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import Divider from '@mui/material/Divider';
 
 function Sidebar({ open }) {
@@ -16,10 +18,12 @@ function Sidebar({ open }) {
         { text: 'Home', to: '/', icon: <HomeIcon /> },
         { text: 'Department', to: '/department', icon: <BusinessIcon /> },
         { text: 'Employee', to: '/employee', icon: <PersonIcon /> },
+        { text: 'Time Sheet', to: '/timesheet', icon: <AccessTimeIcon /> },
+        { text: 'Weekly Report', to: '/report', icon: <AssessmentIcon /> },
     ];
 
     return (
-        <Box sx={ { display: 'flex' }}>
+        <Box sx={{ display: 'flex' }}>
             <Divider />
             <List>
                 {menuItems.map((item) => (
