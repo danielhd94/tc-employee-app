@@ -2,9 +2,10 @@ import React from 'react';
 import MenuIcon from '@mui/icons-material/Menu';
 import { AppBar, Toolbar, IconButton, Typography, styled, Box } from '@mui/material';
 import { drawerWidth } from './DrawerStyles';
-import { useThemeContext } from '../theme/ThemeProvider'; 
+import { useThemeContext } from '../theme/ThemeProvider';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7'; 
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { useMediaQuery } from '@mui/material'; // Asegúrate de importar useMediaQuery
 
 const CustomAppBar = styled(AppBar, {
     shouldForwardProp: (prop) => prop !== 'open',
@@ -26,21 +27,24 @@ const CustomAppBar = styled(AppBar, {
 
 function CustomAppBarComponent({ open, handleDrawerOpen }) {
     const { darkMode, toggleDarkMode } = useThemeContext();
+    const isMobile = useMediaQuery(theme => theme.breakpoints.down('sm')); // Verifica si está en móvil
+
     return (
         <CustomAppBar position="fixed" open={open}>
             <Toolbar>
-                <IconButton
-                    color="inherit"
-                    aria-label="open drawer"
-                    onClick={handleDrawerOpen}
-                    edge="start"
-                    sx={{
-                        marginRight: 5,
-                        ...(open && { display: 'none' }),
-                    }}
-                >
-                    <MenuIcon />
-                </IconButton>
+                {!isMobile && ( // Muestra el botón de menú solo en móviles
+                    <IconButton
+                        color="inherit"
+                        aria-label="open drawer"
+                        onClick={handleDrawerOpen}
+                        edge="start"
+                        sx={{
+                            marginRight: 5,
+                        }}
+                    >
+                        <MenuIcon />
+                    </IconButton>
+                )}
                 <Typography variant="h6" noWrap component="div">
                     Office
                 </Typography>

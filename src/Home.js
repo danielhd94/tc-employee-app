@@ -1,43 +1,74 @@
 import * as React from 'react';
-import { Box, Container, Grid, Paper } from '@mui/material';
+import { Box, Container, Grid, Paper, Typography, useMediaQuery, Card, CardActionArea, CardContent } from '@mui/material';
 import { PieChart, pieArcClasses } from '@mui/x-charts/PieChart';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
-import { fetchEmployees, fetchGenderData, createEmployee } from './api/employeeApi';
-import { createDepartment } from './api/departmentApi';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { fetchEmployees, fetchGenderData } from './api/employeeApi';
+import { useNavigate } from 'react-router-dom';
+
+// Componente para las tarjetas de navegación
+const CardNavigation = ({ item }) => {
+    const navigate = useNavigate();
+
+    return (
+        <Grid item xs={12} sm={6} md={6}>
+            <Card sx={{ height: '100%' }}>
+                <CardActionArea onClick={() => navigate(item.path)}>
+                    <CardContent>
+                        <Typography variant="h5" component="div">
+                            {item.title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            {item.description}
+                        </Typography>
+                    </CardContent>
+                </CardActionArea>
+            </Card>
+        </Grid>
+    );
+};
 
 export default function Home() {
     const [departmentData, setDepartmentData] = React.useState([]);
     const [genderData, setGenderData] = React.useState([]);
+
+    const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+    const isMediumScreen = useMediaQuery((theme) => theme.breakpoints.down('md'));
 
     React.useEffect(() => {
         getDepartmentData();
         getGenderData();
     }, []);
 
+    const cardItems = [
+        {
+            title: 'Time Sheet',
+            description: 'Gestiona el horario de los empleados',
+            path: '/timesheet',
+        },
+        {
+            title: 'Weekly Report',
+            description: 'Revisa el reporte semanal',
+            path: '/report',
+        },
+    ];
+
     const getDepartmentData = async () => {
         try {
-            // Fetch data from external source using the provided function
             const response = await fetchEmployees();
             const { data } = response;
 
-            // Calcular el total de empleados por departamento
             const departmentCounts = {};
             data.forEach(employee => {
-                if (departmentCounts[employee.department.departmenName]) {
-                    departmentCounts[employee.department.departmentName] += 1;
-                } else {
-                    departmentCounts[employee.department.departmentName] = 1;
-                }
+                const departmentName = employee.department.departmentName;
+                departmentCounts[departmentName] = (departmentCounts[departmentName] || 0) + 1;
             });
 
-            // Convertir datos para el gráfico de pastel
             const pieChartData = Object.keys(departmentCounts).map(department => ({
                 id: department,
                 value: departmentCounts[department],
                 label: department,
             }));
 
-            // Actualizar el estado con los datos para el gráfico
             setDepartmentData(pieChartData);
         } catch (error) {
             console.error('Error fetching data: ', error);
@@ -46,11 +77,8 @@ export default function Home() {
 
     const getGenderData = async () => {
         try {
-            // Obtén datos de género
             const genderResponse = await fetchGenderData();
             const genderData = genderResponse.data;
-
-            // Actualiza el estado con los datos de género
             setGenderData(genderData);
         } catch (error) {
             console.error('Error fetching gender data: ', error);
@@ -59,10 +87,25 @@ export default function Home() {
 
     return (
         <Container maxWidth="lg">
+            <Grid container spacing={3}>
+                {cardItems.map((item, index) => (
+                    <CardNavigation key={index} item={item} />
+                ))}
+            </Grid>
+
             <Box my={4}>
                 <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                        <Typography variant={isSmallScreen ? "h5" : "h4"} align="center" gutterBottom>
+                            Company Analytics Dashboard
+                        </Typography>
+                    </Grid>
+
                     <Grid item xs={12} md={6}>
-                        <Paper>
+                        <Paper elevation={3} sx={{ padding: isSmallScreen ? 2 : 3, borderRadius: 4 }}>
+                            <Typography variant="h6" align="center" gutterBottom>
+                                Employees by Department
+                            </Typography>
                             <PieChart
                                 series={[
                                     {
@@ -76,25 +119,40 @@ export default function Home() {
                                         fill: 'gray',
                                     },
                                 }}
-                                height={200}
+                                height={isSmallScreen ? 200 : 300}
+                                animation
                             />
                         </Paper>
                     </Grid>
+
                     <Grid item xs={12} md={6}>
-                        <Paper>
-                            <BarChart width={600} height={400} data={genderData}>
-                                <text x={300} y={30} textAnchor="middle" fontSize="24px" fill="#333">
-                                    Employees by gender
-                                </text>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="genderName" />
-                                <YAxis />
-                                <Tooltip />
-                                <Bar dataKey="employeeCount" fill="#8884d8" />
-                            </BarChart>
+                        <Paper elevation={3} sx={{ padding: isSmallScreen ? 2 : 3, borderRadius: 4 }}>
+                            <Typography variant="h6" align="center" gutterBottom>
+                                Employees by Gender
+                            </Typography>
+                            <ResponsiveContainer width="100%" height={isSmallScreen ? 200 : 400}>
+                                <BarChart data={genderData} barSize={isSmallScreen ? 20 : 40}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="genderName" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="employeeCount" fill="#8884d8" animationDuration={1500} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </Paper>
                     </Grid>
                 </Grid>
+
+                <Box mt={4}>
+                    <Grid container spacing={3}>
+                        <Grid item xs={12}>
+                            <Typography variant="h6" align="center">
+                                Additional Metrics Coming Soon!
+                            </Typography>
+                        </Grid>
+                    </Grid>
+                </Box>
             </Box>
         </Container>
     );

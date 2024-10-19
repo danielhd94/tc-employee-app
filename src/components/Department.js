@@ -12,6 +12,7 @@ import {
     Typography,
     IconButton,
     Grid,
+    useMediaQuery,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -188,46 +189,72 @@ const Department = () => {
         setIsModalOpen(false);
     };
 
+    const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+
     return (
         <Box sx={{ p: 2 }}>
-            <Box sx={{ pt: 2 }}>
-                <Typography variant="h4" marginBottom={2}>Department Page</Typography>
+            <Grid container justifyContent="space-between" alignItems="center">
+                <Grid item>
+                    <Typography variant={isSmallScreen ? 'h5' : 'h4'} marginBottom={2}>
+                        Department Page
+                    </Typography>
+                </Grid>
+                <Grid item>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleAddClick}
+                        startIcon={<AddIcon />}
+                        sx={{
+                            fontSize: isSmallScreen ? '0.8rem' : '1rem',
+                            padding: isSmallScreen ? '6px 12px' : '8px 16px',
+                        }}
+                    >
+                        Agregar
+                    </Button>
+                </Grid>
+            </Grid>
+
+            <Box mt={3}>
+                <ResponsiveTable
+                    data={departments}
+                    columns={COLUMNS}
+                    movilColumns={MOVIL_COLUMNS}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteClick}
+                    getId={(item) => item.departmentId}
+                    isLoading={isLoadingData}
+                />
             </Box>
-            <Button
-                variant="contained"
-                color="primary"
-                onClick={handleAddClick}
-                startIcon={<AddIcon />}
-            >
-                Agregar
-            </Button>
-            <ResponsiveTable
-                data={departments}
-                columns={COLUMNS}
-                movilColumns={MOVIL_COLUMNS}
-                onEdit={handleEdit}
-                onDelete={handleDeleteClick}
-                getId={(item) => item.departmentId}
-                isLoading={isLoadingData}
-            />
+
             <CustomModal
                 open={isModalOpen}
                 onClose={closeModal}
                 title={isEditMode ? EDIT_DEPARTMENT_TEXT : ADD_DEPARTMENT_TEXT}
-                content={(
+                content={
                     <Form
                         fields={FIELDS}
                         onSubmit={handleSubmit}
                         submitValue={isEditMode ? UPDATE_TEXT : CREATE_TEXT}
                         defaultValues={isEditMode ? department : {}}
                     />
-                )}
+                }
+                sx={{
+                    width: isSmallScreen ? '90%' : '50%',
+                    margin: 'auto',
+                }}
             />
+
             <ConfirmationDialog
                 isOpen={showConfirmation}
                 onCancel={handleCancelDelete}
                 onConfirm={handleConfirmToDelete}
+                sx={{
+                    width: isSmallScreen ? '90%' : '400px',
+                    padding: isSmallScreen ? '16px' : '24px',
+                }}
             />
+
             <ToastContainer />
         </Box>
     );

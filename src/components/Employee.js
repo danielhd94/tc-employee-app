@@ -11,6 +11,8 @@ import {
     Box,
     Typography,
     Avatar,
+    useMediaQuery,
+    Grid,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -263,28 +265,44 @@ const Employee = () => {
         }
     }));
 
+    const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+
     return (
         <Box sx={{ p: 2 }}>
-            <Box sx={{ pt: 2 }}>
-                <Typography variant="h4" marginBottom={2}>Employee Page</Typography>
+            <Grid container justifyContent="space-between" alignItems="center">
+                <Grid item>
+                    <Typography variant={isSmallScreen ? 'h5' : 'h4'} marginBottom={2}>
+                        Employee Page
+                    </Typography>
+                </Grid>
+                <Grid item>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleAddClick}
+                        startIcon={<AddIcon />}
+                        sx={{
+                            fontSize: isSmallScreen ? '0.8rem' : '1rem',
+                            padding: isSmallScreen ? '6px 12px' : '8px 16px',
+                        }}
+                    >
+                        Agregar
+                    </Button>
+                </Grid>
+            </Grid>
+
+            <Box mt={3}>
+                <ResponsiveTable
+                    data={newData}
+                    columns={COLUMNS}
+                    movilColumns={MOVIL_COLUMNS}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteClick}
+                    getId={(item) => item.employeeId}
+                    isLoading={isLoadingData}
+                />
             </Box>
-            <Button
-                variant="contained"
-                color="primary"
-                onClick={handleAddClick}
-                startIcon={<AddIcon />}
-            >
-                Agregar
-            </Button>
-            <ResponsiveTable
-                data={newData}
-                columns={COLUMNS}
-                movilColumns={MOVIL_COLUMNS}
-                onEdit={handleEdit}
-                onDelete={handleDeleteClick}
-                getId={(item) => item.employeeId}
-                isLoading={isLoadingData}
-            />
+
             <React.Suspense fallback={<h1>Cargando...</h1>}>
                 <CustomModal
                     open={isModalOpen}
@@ -298,13 +316,23 @@ const Employee = () => {
                             defaultValues={isEditMode ? employee : {}}
                         />
                     }
+                    sx={{
+                        width: isSmallScreen ? '90%' : '50%',
+                        margin: 'auto',
+                    }}
                 />
             </React.Suspense>
+
             <ConfirmationDialog
                 isOpen={showConfirmation}
                 onCancel={handleCancelDelete}
                 onConfirm={handleConfirmToDelete}
+                sx={{
+                    width: isSmallScreen ? '90%' : '400px',
+                    padding: isSmallScreen ? '16px' : '24px',
+                }}
             />
+
             <ToastContainer />
         </Box>
     );

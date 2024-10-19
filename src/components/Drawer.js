@@ -1,14 +1,10 @@
 import React from 'react';
-import { Drawer as MuiDrawer, IconButton, styled } from '@mui/material';
+import { Drawer as MuiDrawer, IconButton, styled, useMediaQuery } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import Sidebar from './Sidebar';
 import { openedMixin, closedMixin } from './DrawerStyles'; // Importa las constantes desde un archivo separado
 import { useTheme } from '@mui/material/styles';
-
-import { List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
-import { Home, Business, People, AccessTime } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
 
 const drawerWidth = 240;
 
@@ -33,6 +29,14 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 
 function CustomDrawer({ open, handleDrawerClose }) {
     const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Verifica si está en móvil
+
+    React.useEffect(() => {
+        if (isMobile && open) {
+            handleDrawerClose(); // Cierra el drawer en móvil
+        }
+    }, [isMobile, open, handleDrawerClose]);
+
     return (
         <Drawer variant="permanent" open={open}>
             <DrawerHeader>
@@ -40,7 +44,7 @@ function CustomDrawer({ open, handleDrawerClose }) {
                     {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
                 </IconButton>
             </DrawerHeader>
-            <Sidebar open={open} handleDrawerClose={handleDrawerClose} />
+            <Sidebar open={open} />
         </Drawer>
     );
 }

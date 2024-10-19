@@ -1,17 +1,12 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import Box from '@mui/material/Box';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
+import { Link } from 'react-router-dom'; // Asegúrate de importar Link
+import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-import Divider from '@mui/material/Divider';
+import MobileNavigation from './MobileNavigation'; // Importa el componente de navegación móvil
 
 function Sidebar({ open }) {
     const menuItems = [
@@ -23,9 +18,9 @@ function Sidebar({ open }) {
     ];
 
     return (
-        <Box sx={{ display: 'flex' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <Divider />
-            <List>
+            <List sx={{ flexGrow: 1 }}>
                 {menuItems.map((item) => (
                     <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
                         <ListItemButton
@@ -52,6 +47,7 @@ function Sidebar({ open }) {
                 ))}
             </List>
             <Divider />
+            <MobileNavigation /> {/* Añade el componente de navegación móvil */}
         </Box>
     );
 }

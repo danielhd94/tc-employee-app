@@ -1,28 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    TextField,
-    Button,
-    Typography,
-    Box,
-    useMediaQuery,
-    useTheme,
-    Grid,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel
-} from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import React, { useState } from 'react';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import { es } from 'date-fns/locale';
-import { format, addDays, startOfWeek } from 'date-fns';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { format, addDays } from 'date-fns';
+import es from 'date-fns/locale/es';
 
 const TimeSheet = () => {
     const [weekStart, setWeekStart] = useState(new Date());
@@ -34,57 +15,25 @@ const TimeSheet = () => {
         { id: '1005', name: 'David', rate: 18, overtimeRate: 25 },
         { id: '1006', name: 'Hugo', rate: 18, overtimeRate: 25 },
     ]);
-    const [timeData, setTimeData] = useState({});
     const [selectedEmployee, setSelectedEmployee] = useState('');
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [selectedDay, setSelectedDay] = useState(0);
+    const [timeData, setTimeData] = useState({});
+    const isMobile = window.innerWidth < 600;
 
-    useEffect(() => {
-        initializeWeek();
-    }, [weekStart]);
+    const filteredEmployees = selectedEmployee
+        ? employees.filter((employee) => employee.id === selectedEmployee)
+        : employees;
 
-    const renderDayOptions = () => {
-        return renderWeekDays().map((day, index) => (
-            <MenuItem key={index} value={index}>
-                {format(day, 'EEEE, d MMMM', { locale: es })}
-            </MenuItem>
-        ));
-    };
-
-    const initializeWeek = () => {
-        const newTimeData = {};
-        for (let i = 0; i < 7; i++) {
-            const day = new Date(weekStart);
-            day.setDate(weekStart.getDate() + i);
-            const dateString = day.toISOString().split('T')[0];
-            newTimeData[dateString] = {};
-            employees.forEach(employee => {
-                newTimeData[dateString][employee.id] = {
-                    entrada: '',
-                    salida: '',
-                    horasHabituales: 0,
-                    horasExtra: 0,
-                    enfermedad: 0,
-                    vacaciones: 0,
-                    diasFestivos: 0,
-                    otro: 0
-                };
-            });
-        }
-        setTimeData(newTimeData);
-    };
-
-    const handleTimeChange = (date, employeeId, field, value) => {
-        setTimeData(prevData => ({
+    const handleTimeChange = (dateString, employeeId, field, value) => {
+        setTimeData((prevData) => ({
             ...prevData,
-            [date]: {
-                ...prevData[date],
+            [dateString]: {
+                ...prevData[dateString],
                 [employeeId]: {
-                    ...prevData[date][employeeId],
-                    [field]: value
-                }
-            }
+                    ...prevData[dateString]?.[employeeId],
+                    [field]: value,
+                },
+            },
         }));
     };
 
@@ -135,19 +84,18 @@ const TimeSheet = () => {
         return totalPay.toFixed(2);
     };
 
-    const renderWeekDays = () => {
-        const days = [];
+    const renderDayOptions = () => {
+        const options = [];
         for (let i = 0; i < 7; i++) {
-            const day = new Date(weekStart);
-            day.setDate(weekStart.getDate() + i);
-            days.push(day);
+            const currentDay = addDays(weekStart, i);
+            options.push(
+                <MenuItem key={i} value={i}>
+                    {format(currentDay, 'EEEE dd/MM/yyyy', { locale: es })}
+                </MenuItem>
+            );
         }
-        return days;
+        return options;
     };
-
-    const filteredEmployees = selectedEmployee
-        ? employees.filter(emp => emp.id === selectedEmployee)
-        : employees;
 
     const renderMobileView = () => {
         const currentDay = addDays(weekStart, selectedDay);
@@ -156,126 +104,124 @@ const TimeSheet = () => {
         return (
             <Box
                 sx={{
-                    maxWidth: { xs: '100%', sm: '600px', md: '800px' }, // Cambia estos valores según tus necesidades
-                    margin: '0 auto', // Centra el contenedor
-                    padding: 2, // Espaciado interno
+                    maxWidth: { xs: '100%', sm: '600px', md: '800px' },
+                    margin: '0 auto',
+                    padding: 2,
                 }}
             >
-            <Box
-                sx={{
-                    display: 'flex',
-                    overflowX: 'auto', // Habilitar scroll horizontal
-                    pb: 2, // Espacio inferior para evitar corte
-                    flexDirection: 'row', // Alinear tarjetas en fila
-                    gap: 2, // Espacio entre tarjetas
-                    scrollbarWidth: 'thin', // Scrollbar delgada para Firefox
-                    msOverflowStyle: 'auto', // Asegurar estilo de scrollbar para IE y Edge
-                    '&::-webkit-scrollbar': {
-                        height: '8px', // Altura del scrollbar
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                        backgroundColor: '#888', // Color del thumb
-                        borderRadius: '4px',
-                    },
-                    '&::-webkit-scrollbar-thumb:hover': {
-                        background: '#555', // Color del thumb al pasar el mouse
-                    },
-                    width: "300px", // Ancho total en dispositivos móviles
-                    maxHeight: "80vh", // Altura máxima para el scroll
-                    overflowY: 'hidden', // Evitar el scroll vertical
-                }}
-            >
-                {filteredEmployees.map((employee) => (
-                    <Paper key={employee.id} sx={{ mb: 2, p: 2, width: "300px", flexShrink: 0 }}>
-                        <Typography variant="h6" gutterBottom>
-                            {employee.name} (ID: {employee.id})
-                        </Typography>
-                        <Grid container spacing={1}>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="Entrada"
-                                    type="time"
-                                    fullWidth
-                                    value={timeData[dateString]?.[employee.id]?.entrada || ''}
-                                    onChange={(e) => handleTimeChange(dateString, employee.id, 'entrada', e.target.value)}
-                                    inputProps={{ step: 300 }}
-                                />
+                <Box
+                    sx={{
+                        display: 'flex',
+                        overflowX: 'auto',
+                        pb: 2,
+                        flexDirection: 'row',
+                        gap: 2,
+                        scrollbarWidth: 'thin',
+                        msOverflowStyle: 'auto',
+                        '&::-webkit-scrollbar': {
+                            height: '8px',
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: '#888',
+                            borderRadius: '4px',
+                        },
+                        '&::-webkit-scrollbar-thumb:hover': {
+                            background: '#555',
+                        },
+                        width: "300px",
+                        maxHeight: "80vh",
+                        overflowY: 'hidden',
+                    }}
+                >
+                    {filteredEmployees.map((employee) => (
+                        <Paper key={employee.id} sx={{ mb: 2, p: 2, width: "300px", flexShrink: 0 }}>
+                            <Typography variant="h6" gutterBottom>
+                                {employee.name} (ID: {employee.id})
+                            </Typography>
+                            <Grid container spacing={1}>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        label="Entrada"
+                                        type="time"
+                                        fullWidth
+                                        value={timeData[dateString]?.[employee.id]?.entrada || ''}
+                                        onChange={(e) => handleTimeChange(dateString, employee.id, 'entrada', e.target.value)}
+                                        inputProps={{ step: 300 }}
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        label="Salida"
+                                        type="time"
+                                        fullWidth
+                                        value={timeData[dateString]?.[employee.id]?.salida || ''}
+                                        onChange={(e) => handleTimeChange(dateString, employee.id, 'salida', e.target.value)}
+                                        inputProps={{ step: 300 }}
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        label="Horas Extra"
+                                        type="number"
+                                        fullWidth
+                                        value={timeData[dateString]?.[employee.id]?.horasExtra || ''}
+                                        onChange={(e) => handleTimeChange(dateString, employee.id, 'horasExtra', e.target.value)}
+                                        inputProps={{ step: 0.5, min: 0 }}
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        label="Enfermedad"
+                                        type="number"
+                                        fullWidth
+                                        value={timeData[dateString]?.[employee.id]?.enfermedad || ''}
+                                        onChange={(e) => handleTimeChange(dateString, employee.id, 'enfermedad', e.target.value)}
+                                        inputProps={{ step: 0.5, min: 0 }}
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        label="Vacaciones"
+                                        type="number"
+                                        fullWidth
+                                        value={timeData[dateString]?.[employee.id]?.vacaciones || ''}
+                                        onChange={(e) => handleTimeChange(dateString, employee.id, 'vacaciones', e.target.value)}
+                                        inputProps={{ step: 0.5, min: 0 }}
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        label="Días Festivos"
+                                        type="number"
+                                        fullWidth
+                                        value={timeData[dateString]?.[employee.id]?.diasFestivos || ''}
+                                        onChange={(e) => handleTimeChange(dateString, employee.id, 'diasFestivos', e.target.value)}
+                                        inputProps={{ step: 0.5, min: 0 }}
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        label="Otros"
+                                        type="number"
+                                        fullWidth
+                                        value={timeData[dateString]?.[employee.id]?.otro || ''}
+                                        onChange={(e) => handleTimeChange(dateString, employee.id, 'otro', e.target.value)}
+                                        inputProps={{ step: 0.5, min: 0 }}
+                                    />
+                                </Grid>
                             </Grid>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="Salida"
-                                    type="time"
-                                    fullWidth
-                                    value={timeData[dateString]?.[employee.id]?.salida || ''}
-                                    onChange={(e) => handleTimeChange(dateString, employee.id, 'salida', e.target.value)}
-                                    inputProps={{ step: 300 }}
-                                />
-                            </Grid>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="Horas Extra"
-                                    type="number"
-                                    fullWidth
-                                    value={timeData[dateString]?.[employee.id]?.horasExtra || ''}
-                                    onChange={(e) => handleTimeChange(dateString, employee.id, 'horasExtra', e.target.value)}
-                                    inputProps={{ step: 0.5, min: 0 }}
-                                />
-                            </Grid>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="Enfermedad"
-                                    type="number"
-                                    fullWidth
-                                    value={timeData[dateString]?.[employee.id]?.enfermedad || ''}
-                                    onChange={(e) => handleTimeChange(dateString, employee.id, 'enfermedad', e.target.value)}
-                                    inputProps={{ step: 0.5, min: 0 }}
-                                />
-                            </Grid>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="Vacaciones"
-                                    type="number"
-                                    fullWidth
-                                    value={timeData[dateString]?.[employee.id]?.vacaciones || ''}
-                                    onChange={(e) => handleTimeChange(dateString, employee.id, 'vacaciones', e.target.value)}
-                                    inputProps={{ step: 0.5, min: 0 }}
-                                />
-                            </Grid>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="Días Festivos"
-                                    type="number"
-                                    fullWidth
-                                    value={timeData[dateString]?.[employee.id]?.diasFestivos || ''}
-                                    onChange={(e) => handleTimeChange(dateString, employee.id, 'diasFestivos', e.target.value)}
-                                    inputProps={{ step: 0.5, min: 0 }}
-                                />
-                            </Grid>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="Otros"
-                                    type="number"
-                                    fullWidth
-                                    value={timeData[dateString]?.[employee.id]?.otro || ''}
-                                    onChange={(e) => handleTimeChange(dateString, employee.id, 'otro', e.target.value)}
-                                    inputProps={{ step: 0.5, min: 0 }}
-                                />
-                            </Grid>
-                        </Grid>
-                        <Typography variant="body1" mt={2}>
-                            Total Horas: {calculateTotalHours(employee.id)}
-                        </Typography>
-                        <Typography variant="body1" mt={1}>
-                            Total a Pagar: ${calculateTotalPay(employee.id)}
-                        </Typography>
-                    </Paper>
-                ))}
-            </Box>
+                            <Typography variant="body1" mt={2}>
+                                Total Horas: {calculateTotalHours(employee.id)}
+                            </Typography>
+                            <Typography variant="body1" mt={1}>
+                                Total a Pagar: ${calculateTotalPay(employee.id)}
+                            </Typography>
+                        </Paper>
+                    ))}
+                </Box>
             </Box>
         );
     };
-
-
 
     const renderDesktopView = () => {
         const currentDay = addDays(weekStart, selectedDay);
@@ -367,8 +313,12 @@ const TimeSheet = () => {
                                         size="small"
                                     />
                                 </TableCell>
-                                <TableCell align="center">{calculateTotalHours(employee.id)}</TableCell>
-                                <TableCell align="center">${calculateTotalPay(employee.id)}</TableCell>
+                                <TableCell align="center">
+                                    {calculateTotalHours(employee.id)}
+                                </TableCell>
+                                <TableCell align="center">
+                                    ${calculateTotalPay(employee.id)}
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -378,15 +328,15 @@ const TimeSheet = () => {
     };
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
-            <Box sx={{ maxWidth: '100%', overflowX: 'auto', p: 2 }}>
-                <Typography variant="h4" gutterBottom align="center">
-                    TU CASA RESTAURANT LLC - HORARIO DE TRABAJO
+        <LocalizationProvider dateAdapter={AdapterDateFns} locale={es}>
+            <Box sx={{ p: 2 }}>
+                <Typography variant="h5" gutterBottom>
+                    Horarios de Trabajo Semanales
                 </Typography>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid container spacing={2} alignItems="center">
                     <Grid item xs={12} sm={6} md={4}>
                         <DatePicker
-                            label="Inicio de la Semana"
+                            label="Semana de Inicio"
                             value={weekStart}
                             onChange={(newValue) => setWeekStart(newValue)}
                             renderInput={(params) => <TextField {...params} fullWidth />}
@@ -394,29 +344,25 @@ const TimeSheet = () => {
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
                         <FormControl fullWidth>
-                            <InputLabel id="employee-select-label">Empleado</InputLabel>
+                            <InputLabel>Empleado</InputLabel>
                             <Select
-                                labelId="employee-select-label"
-                                id="employee-select"
                                 value={selectedEmployee}
-                                label="Empleado"
                                 onChange={(e) => setSelectedEmployee(e.target.value)}
                             >
                                 <MenuItem value="">Todos</MenuItem>
                                 {employees.map((employee) => (
-                                    <MenuItem key={employee.id} value={employee.id}>{employee.name}</MenuItem>
+                                    <MenuItem key={employee.id} value={employee.id}>
+                                        {employee.name}
+                                    </MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
                         <FormControl fullWidth>
-                            <InputLabel id="day-select-label">Día</InputLabel>
+                            <InputLabel>Día de la Semana</InputLabel>
                             <Select
-                                labelId="day-select-label"
-                                id="day-select"
                                 value={selectedDay}
-                                label="Día"
                                 onChange={(e) => setSelectedDay(e.target.value)}
                             >
                                 {renderDayOptions()}
@@ -425,15 +371,6 @@ const TimeSheet = () => {
                     </Grid>
                 </Grid>
                 {isMobile ? renderMobileView() : renderDesktopView()}
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => console.log(timeData)}
-                    >
-                        Guardar Registro
-                    </Button>
-                </Box>
             </Box>
         </LocalizationProvider>
     );
