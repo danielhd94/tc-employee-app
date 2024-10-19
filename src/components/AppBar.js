@@ -5,7 +5,7 @@ import { drawerWidth } from './DrawerStyles';
 import { useThemeContext } from '../theme/ThemeProvider';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
-import { useMediaQuery } from '@mui/material'; // Asegúrate de importar useMediaQuery
+import { useMediaQuery } from '@mui/material';
 
 const CustomAppBar = styled(AppBar, {
     shouldForwardProp: (prop) => prop !== 'open',
@@ -15,6 +15,7 @@ const CustomAppBar = styled(AppBar, {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
     }),
+    backgroundColor: theme.palette.primary.main, // Color de fondo principal
     ...(open && {
         marginLeft: drawerWidth,
         width: `calc(100% - ${drawerWidth}px)`,
@@ -27,7 +28,7 @@ const CustomAppBar = styled(AppBar, {
 
 function CustomAppBarComponent({ open, handleDrawerOpen }) {
     const { darkMode, toggleDarkMode } = useThemeContext();
-    const isMobile = useMediaQuery(theme => theme.breakpoints.down('sm')); // Verifica si está en móvil
+    const isMobile = useMediaQuery(theme => theme.breakpoints.down('sm'));
 
     return (
         <CustomAppBar position="fixed" open={open}>
@@ -39,18 +40,21 @@ function CustomAppBarComponent({ open, handleDrawerOpen }) {
                         onClick={handleDrawerOpen}
                         edge="start"
                         sx={{
-                            marginRight: 5,
+                            marginRight: 2,
+                            '&:hover': {
+                                backgroundColor: 'rgba(255, 255, 255, 0.2)', // Efecto hover
+                            },
                         }}
                     >
                         <MenuIcon />
                     </IconButton>
                 )}
-                <Typography variant="h6" noWrap component="div">
-                    Office
+                <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                    Tu Casa Restaurantes System
                 </Typography>
-                <Box marginLeft="auto" marginRight="20px">
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     {/* Botón de conmutación para cambiar entre light y dark mode */}
-                    <IconButton color="inherit" onClick={toggleDarkMode}>
+                    <IconButton color="inherit" onClick={toggleDarkMode} aria-label="toggle dark mode">
                         {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
                     </IconButton>
                 </Box>
