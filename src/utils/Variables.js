@@ -1,4 +1,5 @@
+const API = "https://tc-employee-backend.onrender.com";
 export const variables = {
-    API_URL: "http://localhost:5002/api/",
-    PHOTO_URL: "http://localhost:5002/Photos/"
+    API_URL: `${API}/api/`,
+    PHOTO_URL: `${API}/Photos/`
 }
