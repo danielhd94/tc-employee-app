@@ -48,7 +48,7 @@ const TimeSheet = () => {
 
 
     useEffect(() => {
-        fetchApiData(fetchEmployees, setEmployees, 'employeeDataReports', 'Failed to fetch employee data');
+        fetchApiData(fetchEmployees, setEmployees, 'employeeDataRegister', 'Failed to fetch employee data');
     }, []);
 
 
