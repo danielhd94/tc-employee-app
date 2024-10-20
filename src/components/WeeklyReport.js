@@ -22,6 +22,7 @@ import { format, addDays } from 'date-fns';
 
 const WeeklyReport = () => {
     const [weekStart, setWeekStart] = useState(new Date());
+    const [employeeIdFilter, setEmployeeIdFilter] = useState('');
     const [employeeData, setEmployeeData] = useState([
         { id: '1001', name: 'ISAAC', rate: 15 },
         { id: '1002', name: 'ERLINDA', rate: 15 },
@@ -53,7 +54,10 @@ const WeeklyReport = () => {
         return days;
     };
 
-    // Verifica si está en vista móvil
+    const filteredEmployees = employeeIdFilter
+        ? employeeData.filter(employee => employee.id.includes(employeeIdFilter))
+        : employeeData;
+
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
     return (
@@ -76,38 +80,44 @@ const WeeklyReport = () => {
                             renderInput={(params) => <TextField {...params} fullWidth />}
                         />
                     </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            label="Filtrar por ID de Empleado"
+                            value={employeeIdFilter}
+                            onChange={(e) => setEmployeeIdFilter(e.target.value)}
+                            fullWidth
+                        />
+                    </Grid>
                 </Grid>
 
-                {/* Condicional para mostrar tarjetas en móvil y tabla en desktop */}
                 {isMobile ? (
                     <Box
                         sx={{
                             display: 'flex',
-                            overflowX: 'auto', // Habilitar scroll horizontal
-                            pb: 2, // Espacio inferior para evitar corte
-                            flexDirection: 'row', // Alinear cards en fila
-                            gap: 2, // Espacio entre tarjetas
-                            scrollbarWidth: 'thin', // Scrollbar delgada para Firefox
-                            msOverflowStyle: 'auto', // Asegurar estilo de scrollbar para IE y Edge
+                            flexDirection: 'column', // Ajusta la dirección para evitar scroll horizontal
+                            gap: 2,
+                            pb: 2,
+                            maxWidth: '100%', // Ajusta la anchura al contenedor
+                            overflowY: 'auto', // Scroll solo en el eje Y
+                            scrollbarWidth: 'thin',
                             '&::-webkit-scrollbar': {
-                                height: '8px', // Altura del scrollbar
+                                width: '8px',
                             },
                             '&::-webkit-scrollbar-thumb': {
-                                backgroundColor: '#888', // Color del thumb
+                                backgroundColor: '#888',
                                 borderRadius: '4px',
                             },
                             '&::-webkit-scrollbar-thumb:hover': {
-                                background: '#555', // Color del thumb al pasar el mouse
+                                background: '#555',
                             },
-                            width: "300px"
                         }}
                     >
-                        {employeeData.map((employee) => {
+                        {filteredEmployees.map((employee) => {
                             const hours = weeklyHours[employee.id] || Array(7).fill(0);
                             const totalHours = calculateTotalHours(hours);
                             const totalPay = calculateTotalPay(hours, employee.rate);
                             return (
-                                <Card key={employee.id} sx={{ minWidth: 250, flexShrink: 0 }}>
+                                <Card key={employee.id} sx={{ width: '100%' }}>
                                     <CardContent>
                                         <Typography variant="h6">{employee.name}</Typography>
                                         <Divider sx={{ my: 1 }} />
@@ -121,14 +131,6 @@ const WeeklyReport = () => {
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                             <Typography variant="body2">Total Horas:</Typography>
                                             <Typography variant="body2">{totalHours}</Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                            <Typography variant="body2">Tarifa por Hora:</Typography>
-                                            <Typography variant="body2">${employee.rate.toFixed(2)}</Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <Typography variant="body2">Total a Pagar:</Typography>
-                                            <Typography variant="body2">${totalPay.toFixed(2)}</Typography>
                                         </Box>
                                     </CardContent>
                                 </Card>
@@ -145,15 +147,12 @@ const WeeklyReport = () => {
                                         <TableCell key={index}>{day}</TableCell>
                                     ))}
                                     <TableCell>Total Horas</TableCell>
-                                    <TableCell>Tarifa por Hora</TableCell>
-                                    <TableCell>Total a Pagar</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {employeeData.map((employee) => {
+                                {filteredEmployees.map((employee) => {
                                     const hours = weeklyHours[employee.id] || Array(7).fill(0);
                                     const totalHours = calculateTotalHours(hours);
-                                    const totalPay = calculateTotalPay(hours, employee.rate);
                                     return (
                                         <TableRow key={employee.id}>
                                             <TableCell>{employee.name}</TableCell>
@@ -161,8 +160,6 @@ const WeeklyReport = () => {
                                                 <TableCell key={index}>{hour} horas</TableCell>
                                             ))}
                                             <TableCell>{totalHours}</TableCell>
-                                            <TableCell>${employee.rate.toFixed(2)}</TableCell>
-                                            <TableCell>${totalPay.toFixed(2)}</TableCell>
                                         </TableRow>
                                     );
                                 })}
