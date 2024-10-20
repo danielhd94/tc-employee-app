@@ -38,6 +38,7 @@ const Employee = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [employee, setEmployee] = useState({
         employeeId: null,
+        employeeCode: '',
         employeeName: '',
         department: "",
         dateOfJoining: '',
@@ -228,7 +229,7 @@ const Employee = () => {
         );
     };
     const COLUMNS = useMemo(() => [
-        { field: 'employeeId', headerName: 'Employee ID', width: 120, renderCell: createTextRenderCell('employeeId') },
+        { field: 'employeeCode', headerName: 'Employee Code', width: 150, renderCell: createTextRenderCell('employeeCode') },
         { field: 'gender', headerName: 'Gender', width: 120, renderCell: renderGenderCell },
         { field: 'photoFileName', headerName: 'Profile', width: 100, sortable: false, filterable: false, renderCell: renderProfileCell },
         { field: 'employeeName', headerName: 'Employee Name', width: 200, renderCell: createTextRenderCell('employeeName') },

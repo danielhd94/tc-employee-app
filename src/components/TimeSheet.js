@@ -1,20 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { Box, FormControl, Grid, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Card, CardContent, Divider, Avatar } from '@mui/material';
 import { format, addDays } from 'date-fns';
 import es from 'date-fns/locale/es';
+import { fetchEmployees } from '../api/employeeApi.js';
+import { User, Clock, Calendar } from 'lucide-react';
+
+const transformEmployees = (employees) => {
+    return employees.map(employee => ({
+        id: employee.employeeId.toString(),
+        name: employee.employeeName,
+        rate: employee.rate,
+        overtimeRate: employee.overtimeRate,
+        // Campos adicionales que podrían ser útiles
+        departmentId: employee.department.departmentId.toString(),
+        dateOfJoining: employee.dateOfJoining.split('T')[0],
+        photoFileName: employee.photoFileName,
+        genderId: employee.gender.genderId.toString(),
+        employeeCode: employee.employeeCode
+    }));
+};
 
 const TimeSheet = () => {
     const [weekStart, setWeekStart] = useState(new Date());
-    const [employees, setEmployees] = useState([
-        { id: '1001', name: 'Isaac', rate: 18, overtimeRate: 25 },
-        { id: '1002', name: 'Erlinda', rate: 18, overtimeRate: 25 },
-        { id: '1003', name: 'Jose', rate: 18, overtimeRate: 25 },
-        { id: '1004', name: 'Milagros', rate: 18, overtimeRate: 25 },
-        { id: '1005', name: 'David', rate: 18, overtimeRate: 25 },
-        { id: '1006', name: 'Hugo', rate: 18, overtimeRate: 25 },
-    ]);
+    const [isLoadingData, setIsLoadingData] = useState(true);
+    const [employees, setEmployees] = useState([]);
+
+    const fetchApiData = async (apiFunction, setData, storageKey, errorMessage) => {
+        setIsLoadingData(true);
+        try {
+            const response = await apiFunction();
+            if (response.success) {
+                const transformedEmployees = transformEmployees(response.data);
+                console.log(transformedEmployees);
+                setData(transformedEmployees);
+                localStorage.setItem(storageKey, JSON.stringify(response.data));
+            } else {
+                console.error(errorMessage);
+            }
+        } catch (error) {
+            console.error(`An error occurred while fetching data: ${error}`);
+        } finally {
+            setIsLoadingData(false);
+        }
+    };
+
+
+    useEffect(() => {
+        fetchApiData(fetchEmployees, setEmployees, 'employeeDataReports', 'Failed to fetch employee data');
+    }, []);
+
+
+    console.log({ employees });
     const [selectedEmployee, setSelectedEmployee] = useState('');
     const [selectedDay, setSelectedDay] = useState(0);
     const [timeData, setTimeData] = useState({});
@@ -102,43 +140,23 @@ const TimeSheet = () => {
         const dateString = format(currentDay, 'yyyy-MM-dd');
 
         return (
-            <Box
-                sx={{
-                    maxWidth: { xs: '100%', sm: '600px', md: '800px' },
-                    margin: '0 auto',
-                    padding: 2,
-                }}
-            >
-                <Box
-                    sx={{
-                        display: 'flex',
-                        overflowX: 'auto',
-                        pb: 2,
-                        flexDirection: 'row',
-                        gap: 2,
-                        scrollbarWidth: 'thin',
-                        msOverflowStyle: 'auto',
-                        '&::-webkit-scrollbar': {
-                            height: '8px',
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                            backgroundColor: '#888',
-                            borderRadius: '4px',
-                        },
-                        '&::-webkit-scrollbar-thumb:hover': {
-                            background: '#555',
-                        },
-                        width: "300px",
-                        maxHeight: "80vh",
-                        overflowY: 'hidden',
-                    }}
-                >
-                    {filteredEmployees.map((employee) => (
-                        <Paper key={employee.id} sx={{ mb: 2, p: 2, width: "300px", flexShrink: 0 }}>
-                            <Typography variant="h6" gutterBottom>
-                                {employee.name} (ID: {employee.id})
-                            </Typography>
-                            <Grid container spacing={1}>
+            <Box sx={{ maxWidth: '100%', margin: '0 auto', padding: 2 }}>
+                {filteredEmployees.map((employee) => (
+                    <Card key={employee.id} sx={{ mb: 2, boxShadow: 3 }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                                    <User />
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="h6">{employee.name}</Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        {employee.employeeCode}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <Divider sx={{ my: 2 }} />
+                            <Grid container spacing={2}>
                                 <Grid item xs={6}>
                                     <TextField
                                         label="Entrada"
@@ -210,15 +228,14 @@ const TimeSheet = () => {
                                     />
                                 </Grid>
                             </Grid>
-                            <Typography variant="body1" mt={2}>
-                                Total Horas: {calculateTotalHours(employee.id)}
-                            </Typography>
-                            <Typography variant="body1" mt={1}>
-                                Total a Pagar: ${calculateTotalPay(employee.id)}
-                            </Typography>
-                        </Paper>
-                    ))}
-                </Box>
+                            <Box sx={{ mt: 2, textAlign: 'right' }}>
+                                <Typography variant="body1" color="primary.main" fontWeight="bold">
+                                    Total Horas: {calculateTotalHours(employee.id)}
+                                </Typography>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                ))}
             </Box>
         );
     };
@@ -228,35 +245,48 @@ const TimeSheet = () => {
         const dateString = format(currentDay, 'yyyy-MM-dd');
 
         return (
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} sx={{ boxShadow: 3, mt: 3 }}>
                 <Table size="small">
                     <TableHead>
-                        <TableRow>
-                            <TableCell>Empleado (ID)</TableCell>
-                            <TableCell align="center">Entrada</TableCell>
-                            <TableCell align="center">Salida</TableCell>
-                            <TableCell align="center">Horas Extra</TableCell>
-                            <TableCell align="center">Enfermedad</TableCell>
-                            <TableCell align="center">Vacaciones</TableCell>
-                            <TableCell align="center">Días Festivos</TableCell>
-                            <TableCell align="center">Otro</TableCell>
-                            <TableCell align="center">Total Horas (Semana)</TableCell>
-                            <TableCell align="center">Total a Pagar (Semana)</TableCell>
+                        <TableRow sx={{ bgcolor: 'primary.main' }}>
+                            <TableCell sx={{ color: 'white' }}>Empleado</TableCell>
+                            <TableCell align="center" sx={{ color: 'white' }}>Entrada</TableCell>
+                            <TableCell align="center" sx={{ color: 'white' }}>Salida</TableCell>
+                            <TableCell align="center" sx={{ color: 'white' }}>Horas Extra</TableCell>
+                            <TableCell align="center" sx={{ color: 'white' }}>Enfermedad</TableCell>
+                            <TableCell align="center" sx={{ color: 'white' }}>Vacaciones</TableCell>
+                            <TableCell align="center" sx={{ color: 'white' }}>Días Festivos</TableCell>
+                            <TableCell align="center" sx={{ color: 'white' }}>Otro</TableCell>
+                            <TableCell align="center" sx={{ color: 'white' }}>Total Horas</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {filteredEmployees.map((employee) => (
-                            <TableRow key={employee.id}>
+                            <TableRow key={employee.id} sx={{ '&:nth-of-type(odd)': { bgcolor: 'action.hover' } }}>
                                 <TableCell component="th" scope="row">
-                                    {employee.name} ({employee.id})
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Avatar sx={{ bgcolor: 'primary.light', mr: 2 }}>
+                                            <User />
+                                        </Avatar>
+                                        <Box>
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                                {employee.name}
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                                {employee.employeeCode}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
                                 </TableCell>
                                 <TableCell align="center">
                                     <TextField
                                         type="time"
                                         value={timeData[dateString]?.[employee.id]?.entrada || ''}
                                         onChange={(e) => handleTimeChange(dateString, employee.id, 'entrada', e.target.value)}
-                                        inputProps={{ step: 300 }}
                                         size="small"
+                                        InputProps={{
+                                            startAdornment: <Clock size={16} color="#666" style={{ marginRight: 8 }} />,
+                                        }}
                                     />
                                 </TableCell>
                                 <TableCell align="center">
@@ -314,10 +344,9 @@ const TimeSheet = () => {
                                     />
                                 </TableCell>
                                 <TableCell align="center">
-                                    {calculateTotalHours(employee.id)}
-                                </TableCell>
-                                <TableCell align="center">
-                                    ${calculateTotalPay(employee.id)}
+                                    <Typography variant="body2" fontWeight="bold" color="primary.main">
+                                        {calculateTotalHours(employee.id)}
+                                    </Typography>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -329,47 +358,54 @@ const TimeSheet = () => {
 
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns} locale={es}>
-            <Box sx={{ p: 2 }}>
-                <Typography variant="h5" gutterBottom>
+            <Box sx={{ p: 2, bgcolor: 'background.default', minHeight: '100vh' }}>
+                <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                     Horarios de Trabajo Semanales
                 </Typography>
-                <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} sm={6} md={4}>
-                        <DatePicker
-                            label="Semana de Inicio"
-                            value={weekStart}
-                            onChange={(newValue) => setWeekStart(newValue)}
-                            renderInput={(params) => <TextField {...params} fullWidth />}
-                        />
+                <Paper sx={{ p: 2, mb: 3, boxShadow: 2 }}>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} sm={6} md={4}>
+                            <DatePicker
+                                label="Semana de Inicio"
+                                value={weekStart}
+                                onChange={(newValue) => setWeekStart(newValue)}
+                                renderInput={(params) => <TextField {...params} fullWidth />}
+                                InputProps={{
+                                    startAdornment: <Calendar size={20} color="#666" style={{ marginRight: 8 }} />,
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={4}>
+                            <FormControl fullWidth>
+                                <InputLabel>Empleado</InputLabel>
+                                <Select
+                                    value={selectedEmployee}
+                                    onChange={(e) => setSelectedEmployee(e.target.value)}
+                                    startAdornment={<User size={20} color="#666" style={{ marginRight: 8 }} />}
+                                >
+                                    <MenuItem value="">Todos</MenuItem>
+                                    {employees.map((employee) => (
+                                        <MenuItem key={employee.id} value={employee.id}>
+                                            {employee.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={4}>
+                            <FormControl fullWidth>
+                                <InputLabel>Día de la Semana</InputLabel>
+                                <Select
+                                    value={selectedDay}
+                                    onChange={(e) => setSelectedDay(e.target.value)}
+                                    startAdornment={<Calendar size={20} color="#666" style={{ marginRight: 8 }} />}
+                                >
+                                    {renderDayOptions()}
+                                </Select>
+                            </FormControl>
+                        </Grid>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <FormControl fullWidth>
-                            <InputLabel>Empleado</InputLabel>
-                            <Select
-                                value={selectedEmployee}
-                                onChange={(e) => setSelectedEmployee(e.target.value)}
-                            >
-                                <MenuItem value="">Todos</MenuItem>
-                                {employees.map((employee) => (
-                                    <MenuItem key={employee.id} value={employee.id}>
-                                        {employee.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <FormControl fullWidth>
-                            <InputLabel>Día de la Semana</InputLabel>
-                            <Select
-                                value={selectedDay}
-                                onChange={(e) => setSelectedDay(e.target.value)}
-                            >
-                                {renderDayOptions()}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                </Grid>
+                </Paper>
                 {isMobile ? renderMobileView() : renderDesktopView()}
             </Box>
         </LocalizationProvider>

@@ -27,7 +27,6 @@ const Department = () => {
     const CREATE_TEXT = 'Create';
     const UPDATE_TEXT = 'Update';
     const COLUMNS = [
-        { field: 'departmentId', headerName: 'ID', width: 90 },
         {
             field: 'departmentName',
             headerName: 'Name',
