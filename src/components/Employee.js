@@ -1,245 +1,56 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useFetchData } from '../hooks/useFetchData';
+import { useEmployeeForm } from '../hooks/useEmployeeForm';
 import useDeleteConfirmation from '../hooks/useDeleteConfirmation';
-import { ConfirmationDialog } from './ConfirmationDialog';
-import Form from './Form';
-import { fetchDepartments } from '../api/departmentApi.js';
-import { fetchEmployees, createEmployee, updateEmployee, deleteEmployee } from '../api/employeeApi.js';
+import { fetchEmployees, deleteEmployee } from '../api/employeeApi';
+import { fetchDepartments } from '../api/departmentApi';
 import {
     Button,
     Box,
     Typography,
-    Avatar,
-    useMediaQuery,
     Grid,
+    IconButton,
+    Avatar,
+    CircularProgress
 } from '@mui/material';
-import {
-    Add as AddIcon,
-    Edit as EditIcon,
-    Delete as DeleteIcon,
-} from '@mui/icons-material';
-import IconButton from '@mui/material/IconButton';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import ResponsiveTable from './ResponsiveTable';
+import CustomModal from './CustomModal';
+import { ConfirmationDialog } from './ConfirmationDialog';
+import Form from './Form';
 import { variables } from '../utils/Variables';
-
-import loadable from '@loadable/component';
-
-const CustomModal = loadable(() => import('./CustomModal'));
+import { useTheme } from '@mui/material/styles';
 
 const Employee = () => {
-    const ADD_EMPLOYEE_TEXT = 'Add Employee';
-    const EDIT_EMPLOYEE_TEXT = 'Edit Employee';
-    const CREATE_TEXT = 'Create';
-    const UPDATE_TEXT = 'Update';
+    const theme = useTheme();
+    // Fetch employees and departments using custom hooks
+    const { data: employees = [], isLoadingData, setData: setEmployees } = useFetchData(fetchEmployees, 'employeeData');
+    const { data: departments } = useFetchData(fetchDepartments, 'departmentData');
 
-    const [isLoadingData, setIsLoadingData] = useState(true);
+    // Modal and form state handling
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
-    const [employee, setEmployee] = useState({
-        employeeId: null,
-        employeeCode: '',
-        employeeName: '',
-        department: "",
-        dateOfJoining: '',
-        photoFileName: 'anonymous.png',
-        gender: "",
-    });
-    const [employees, setEmployees] = useState([]);
-    const [shouldFetch, setShouldFetch] = useState(true);
-    const [shouldFetchDepartment, setShouldFetchDepartment] = useState(true);
+    const { employee, setEmployee, handleSubmit, isSubmitting } = useEmployeeForm(employees, setEmployees, isEditMode);
 
-    const fetchApiData = async (apiFunction, setData, storageKey, errorMessage) => {
-        setIsLoadingData(true);
-        try {
-            const response = await apiFunction();
-            if (response.success) {
-                setData(response.data);
-                localStorage.setItem(storageKey, JSON.stringify(response.data));
-            } else {
-                console.error(errorMessage);
-            }
-        } catch (error) {
-            console.error(`An error occurred while fetching data: ${error}`);
-        } finally {
-            setIsLoadingData(false);
-        }
-    };
-
-    useEffect(() => {
-        if (shouldFetch) {
-            fetchApiData(fetchEmployees, setEmployees, 'employeeData', 'Failed to fetch employee data');
-            setShouldFetch(false);
-        }
-        if (shouldFetchDepartment) {
-            fetchApiData(fetchDepartments, setDepartments, 'departmentData', 'Failed to fetch department data');
-            setShouldFetchDepartment(false);
-        }
-    }, [shouldFetch, shouldFetchDepartment]);
-
-
+    // Delete confirmation handling
     const {
         showConfirmation,
-        itemToDelete,
         handleDeleteClick,
         handleCancelDelete,
         handleConfirmDelete,
-    } = useDeleteConfirmation();
+    } = useDeleteConfirmation(employees, setEmployees);
 
-    const [departments, setDepartments] = useState([]);
-
-    const handleConfirmToDelete = async () => {
-        const response = await handleConfirmDelete(deleteEmployee);
-
-        if (!response.success) {
-            toast.error(response.message);
-            return;
-        }
-
-        const updatedEmployees = employees.filter(employee => employee.employeeId !== itemToDelete);
-        setEmployees(updatedEmployees);
-
-        localStorage.setItem('employeeData', JSON.stringify(updatedEmployees));
-        toast.success(response.data);
-    };
-
-    const handleSubmit = async (data) => {
-        try {
-            const parameter = {
-                ...data,
-                department: {
-                    departmentId: data.department,
-                },
-                gender: {
-                    genderId: data.gender,
-                }
-            };
-            const response = isEditMode
-                ? await updateEmployee(parameter)
-                : await createEmployee(parameter);
-
-            if (!response.success) {
-                toast.error(response.message);
-                return;
-            }
-
-            if (isEditMode) {
-                const updatedEmployees = employees.map(employee => {
-                    if (employee.employeeId === data.employeeId) {
-                        return { ...employee, ...response.data };
-                    }
-                    return employee;
-                });
-
-                setEmployees(updatedEmployees);
-                localStorage.setItem('employeeData', JSON.stringify(updatedEmployees));
-            } else {
-
-                setEmployees([...employees, response.data]);
-                localStorage.setItem('employeeData', JSON.stringify([...employees, response.data]));
-            }
-            toast.success(response.message);
-            closeModal();
-        } catch (error) {
-            toast.error('An error occurred while processing the request.');
-        }
-    };
-
-    const handleAddClick = () => {
-        setEmployee({
-            employeeId: null,
-            employeeName: '',
-            department: {},
-            dateOfJoining: '',
-            photoFileName: 'anonymous.png',
-            gender: {},
-        });
-        setIsEditMode(false);
-        setIsModalOpen(true);
-    };
-
-    const handleEdit = (item) => {
-        const newItem = {
-            ...item,
-            dateOfJoining: formatDate(item.dateOfJoining),
-            department: item.department?.value,
-            gender: item.gender?.value
-        };
-        setEmployee(newItem);
-        setIsEditMode(true);
-        setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-    };
-
-    const DEPARTMENT_OPTIONS = useMemo(() => {
-        return departments.map(item => ({
-            value: item.departmentId,
-            label: item.departmentName
-        }));
-    }, [departments]);
-
+    // Define department and gender options
+    const DEPARTMENT_OPTIONS = departments.map(dept => ({ label: dept.departmentName, value: dept.departmentId }));
     const GENDER_OPTIONS = useMemo(() => [
-        { value: 1, label: 'Male' },
-        { value: 2, label: 'Female' },
+        { label: 'Male', value: 1 },
+        { label: 'Female', value: 2 },
+        { label: 'Other', value: 3 }
     ], []);
 
-    const formatDate = (isoDate) => {
-        const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-        const [month, day, year] = new Date(isoDate).toLocaleDateString(undefined, options).split('/');
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    };
-
-
-    const createTextRenderCell = (field) => (params) => {
-        const value = params.row[field];
-
-        // Verificar si el valor es una fecha en formato ISO
-        if (value && typeof value === 'string' && value.includes('T')) {
-            const formattedDate = formatDate(value);
-            return <Box sx={{ fontWeight: 'light' }}>{formattedDate}</Box>;
-        }
-
-        return <Box sx={{ fontWeight: 'light' }}>{value && value.label ? value.label : value}</Box>;
-    };
-
-    const createIconButtonRenderCell = (icon, onClick) => (params) => (
-        <IconButton color="primary" size="small" onClick={() => onClick(params.row)}>
-            {icon}
-        </IconButton>
-    );
-
-    const renderGenderCell = createTextRenderCell('gender');
-    const renderDepartmentCell = createTextRenderCell('department');
-    const renderEditCell = createIconButtonRenderCell(<EditIcon />, (params) => handleEdit(params));
-    const renderDeleteCell = createIconButtonRenderCell(<DeleteIcon />, (params) => handleDeleteClick(params.employeeId));
-
-    const renderProfileCell = (params) => {
-        const photoFileName = params.row.photoFileName; // Suponiendo que `photoFileName` sea el nombre del archivo de la foto
-        const imageUrl = variables.PHOTO_URL + (photoFileName || 'anonymous.png'); // URL de la imagen de perfil
-
-        return (
-            <Avatar
-                alt="photo profile"
-                src={imageUrl} // Establece el origen de la imagen de perfil
-                sx={{ width: '36px', height: '36px' }} // Estilo del avatar
-            />
-        );
-    };
-    const COLUMNS = useMemo(() => [
-        { field: 'employeeCode', headerName: 'Employee Code', width: 150, renderCell: createTextRenderCell('employeeCode') },
-        { field: 'gender', headerName: 'Gender', width: 120, renderCell: renderGenderCell },
-        { field: 'photoFileName', headerName: 'Profile', width: 100, sortable: false, filterable: false, renderCell: renderProfileCell },
-        { field: 'employeeName', headerName: 'Employee Name', width: 200, renderCell: createTextRenderCell('employeeName') },
-        { field: 'department', headerName: 'Department', width: 150, renderCell: renderDepartmentCell },
-        { field: 'dateOfJoining', headerName: 'Joining Date', width: 150, renderCell: createTextRenderCell('dateOfJoining') },
-        { field: 'edit', headerName: 'Editar', width: 100, sortable: false, filterable: false, renderCell: renderEditCell },
-        { field: 'delete', headerName: 'Eliminar', width: 110, sortable: false, filterable: false, renderCell: renderDeleteCell },
-    ], []);
-
-
+    // Define fields for the form
     const FIELDS = useMemo(() => [
         { label: 'Employee Name', name: 'employeeName', type: 'text' },
         { label: 'Department', name: 'department', type: 'select', options: DEPARTMENT_OPTIONS },
@@ -254,89 +65,183 @@ const Employee = () => {
         type: field.name === 'photoFileName' ? 'img' : 'text',
     })), [FIELDS]);
 
-    const newData = employees.map(({ department, gender, ...rest }) => ({
-        ...rest,
-        department: {
-            value: department.departmentId,
-            label: department.departmentName,
-        },
-        gender: {
-            value: gender.genderId,
-            label: gender.genderName,
-        }
-    }));
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setEmployee({}); // Reiniciar el empleado al cerrar el modal
+    };
 
-    const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+
+    const handleAddClick = () => {
+        setEmployee({
+            employeeId: null,
+            employeeCode: '', // Añadir un campo para el código del empleado si es necesario
+            employeeName: '',
+            department: {
+                departmentId: null, // Inicializa el departmentId como null
+                departmentName: '' // Inicializa el departmentName como un string vacío
+            },
+            dateOfJoining: '',
+            photoFileName: 'anonymous.png',
+            gender: {
+                genderId: null, // Inicializa el genderId como null
+                genderName: '' // Inicializa el genderName como un string vacío
+            },
+            rate: 0, // Inicializa la tasa
+            overtimeRate: 0 // Inicializa la tasa de horas extra
+        });
+        setIsEditMode(false); // Establece el modo de edición a falso
+        setIsModalOpen(true); // Abre el modal
+    };
+
+
+    // Define handleEdit with useCallback
+    /*const handleEdit = useCallback((item) => {
+        setEmployee(item);
+        setIsEditMode(true);
+        setIsModalOpen(true);
+    }, [setEmployee, setIsEditMode]);*/
+    const formatDate = (isoDate) => {
+        const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+        const [month, day, year] = new Date(isoDate).toLocaleDateString(undefined, options).split('/');
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    };
+
+    const handleEdit = useCallback((item) => {
+        const newItem = {
+            ...item,
+            dateOfJoining: formatDate(item.dateOfJoining),
+            department: item.department?.value,
+            gender: item.gender?.value
+        };
+        setEmployee(newItem);
+        setIsEditMode(true);
+        setIsModalOpen(true);
+    }, [setEmployee, setIsEditMode]);
+
+    // Table columns definition
+    const COLUMNS = useMemo(() => [
+        {
+            field: 'photoFileName', headerName: 'Profile', width: 100,
+            renderCell: params => <Avatar
+                key={`img_${params.row.photoFileName || '/anonymous.png'}`}
+                src={variables.PHOTO_URL + (params.row.photoFileName || 'anonymous.png')}
+                sx={{ width: '2.5rem', height: '2.5rem' }}
+            />
+        },
+        { field: 'employeeCode', headerName: 'Code', width: 150 },
+        { field: 'employeeName', headerName: 'Name', width: 200 },
+        {
+            field: 'department', headerName: 'Department', width: 150,
+            renderCell: params => <Box>{params.row.department.departmentName}</Box>
+        },
+        {
+            field: 'dateOfJoining', headerName: 'Joining Date', width: 150,
+            renderCell: params => new Date(params.row.dateOfJoining).toLocaleDateString()
+        },
+        {
+            field: 'edit', headerName: 'Edit', width: 100,
+            renderCell: params => (
+                <IconButton onClick={() => handleEdit(params.row)} aria-label="Edit employee">
+                    <EditIcon />
+                </IconButton>
+            )
+        },
+        {
+            field: 'delete', headerName: 'Delete', width: 100,
+            renderCell: params => (
+                <IconButton onClick={() => handleDeleteClick(params.row.employeeId)} aria-label="Delete employee">
+                    <DeleteIcon />
+                </IconButton>
+            )
+        },
+    ], [handleDeleteClick, handleEdit]);
+
+    useEffect(() => {
+        if (!isSubmitting) {
+            closeModal();
+        }
+    }, [isSubmitting]);
 
     return (
-        <Box sx={{ p: 2 }}>
-            <Grid container justifyContent="space-between" alignItems="center">
-                <Grid item>
-                    <Typography variant={isSmallScreen ? 'h5' : 'h4'} marginBottom={2}>
-                        Employee Page
+        <Grid container justifyContent="center" sx={{ padding: '1rem' }}>
+            <Grid item xs={12} lg={10}>
+                <ToastContainer />
+                <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{
+                        marginBottom: '1.5rem',
+                        bgcolor: theme.palette.background.default,
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        boxShadow: 2
+                    }}
+                >
+                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: theme.palette.primary.dark }}>
+                        Employees
                     </Typography>
-                </Grid>
-                <Grid item>
                     <Button
+                        onClick={handleAddClick}
                         variant="contained"
                         color="primary"
-                        onClick={handleAddClick}
                         startIcon={<AddIcon />}
-                        sx={{
-                            fontSize: isSmallScreen ? '0.8rem' : '1rem',
-                            padding: isSmallScreen ? '6px 12px' : '8px 16px',
-                        }}
+                        sx={{ padding: '0.6rem 1.2rem', textTransform: 'none', borderRadius: '8px' }}
                     >
-                        Agregar
+                        Add Employee
                     </Button>
-                </Grid>
+                </Box>
+                {isLoadingData ? (
+                    <Box
+                        display="flex"
+                        justifyContent="center"
+                        alignItems="center"
+                        sx={{ height: '250px' }}
+                    >
+                        <CircularProgress />
+                    </Box>
+                ) : (
+                    <ResponsiveTable
+                        data={employees}
+                        columns={COLUMNS}
+                        isLoading={isLoadingData}
+                        onEdit={handleEdit}
+                        onDelete={handleDeleteClick}
+                        getId={item => item.employeeId}
+                    />
+                )}
+
+                {/* Modal for Add/Edit Employee */}
+                <React.Suspense fallback={<h1>Cargando...</h1>}>
+                    <CustomModal
+                        open={isModalOpen}
+                        onClose={closeModal}
+                        title={isEditMode ? 'Edit Employee' : 'Add Employee'}
+                        content={
+                            <Form
+                                fields={FIELDS}
+                                onSubmit={handleSubmit}
+                                submitValue={isEditMode ? 'Update Employee' : 'Create Employee'}
+                                defaultValues={isEditMode ? employee : {}}
+                            />
+                        }
+                        sx={{
+                            width: { xs: '95%', sm: '80%', md: '70%' }, // Ajuste responsive
+                            margin: 'auto',
+                        }}
+                    />
+                </React.Suspense>
+
+                {/* Confirmation Dialog for Delete */}
+                <ConfirmationDialog
+                    isOpen={showConfirmation}
+                    onCancel={handleCancelDelete}
+                    onConfirm={() => handleConfirmDelete(deleteEmployee)}
+                />
             </Grid>
-
-            <Box mt={3}>
-                <ResponsiveTable
-                    data={newData}
-                    columns={COLUMNS}
-                    movilColumns={MOVIL_COLUMNS}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteClick}
-                    getId={(item) => item.employeeId}
-                    isLoading={isLoadingData}
-                />
-            </Box>
-
-            <React.Suspense fallback={<h1>Cargando...</h1>}>
-                <CustomModal
-                    open={isModalOpen}
-                    onClose={closeModal}
-                    title={isEditMode ? EDIT_EMPLOYEE_TEXT : ADD_EMPLOYEE_TEXT}
-                    content={
-                        <Form
-                            fields={FIELDS}
-                            onSubmit={handleSubmit}
-                            submitValue={isEditMode ? UPDATE_TEXT : CREATE_TEXT}
-                            defaultValues={isEditMode ? employee : {}}
-                        />
-                    }
-                    sx={{
-                        width: isSmallScreen ? '90%' : '50%',
-                        margin: 'auto',
-                    }}
-                />
-            </React.Suspense>
-
-            <ConfirmationDialog
-                isOpen={showConfirmation}
-                onCancel={handleCancelDelete}
-                onConfirm={handleConfirmToDelete}
-                sx={{
-                    width: isSmallScreen ? '90%' : '400px',
-                    padding: isSmallScreen ? '16px' : '24px',
-                }}
-            />
-
-            <ToastContainer />
-        </Box>
+        </Grid>
     );
-}
+
+};
 
 export default Employee;

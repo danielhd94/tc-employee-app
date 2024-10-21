@@ -50,7 +50,7 @@ function CustomAppBarComponent({ open, handleDrawerOpen }) {
                     </IconButton>
                 )}
                 <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                    Tu Casa Restaurantes System
+                    RH KOLAVAL
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     {/* Botón de conmutación para cambiar entre light y dark mode */}

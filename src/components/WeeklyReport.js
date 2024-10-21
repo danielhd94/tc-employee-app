@@ -396,7 +396,7 @@ const WeeklyReport = () => {
                             color: 'text.primary'
                         }}
                     >
-                        TU CASA RESTAURANT LLC - REPORTE SEMANAL DE HORAS
+                        RH KOLAVAL - REPORTE SEMANAL DE HORAS
                     </Typography>
                     <Grid container spacing={2} justifyContent="center" sx={{ mb: { xs: 2, sm: 4 } }}>
                         <Grid item xs={12} sm={6} md={4}>

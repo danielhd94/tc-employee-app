@@ -13,7 +13,6 @@ const transformEmployees = (employees) => {
         name: employee.employeeName,
         rate: employee.rate,
         overtimeRate: employee.overtimeRate,
-        // Campos adicionales que podrían ser útiles
         departmentId: employee.department.departmentId.toString(),
         dateOfJoining: employee.dateOfJoining.split('T')[0],
         photoFileName: employee.photoFileName,
@@ -51,8 +50,6 @@ const TimeSheet = () => {
         fetchApiData(fetchEmployees, setEmployees, 'employeeDataRegister', 'Failed to fetch employee data');
     }, []);
 
-
-    console.log({ employees });
     const [selectedEmployee, setSelectedEmployee] = useState('');
     const [selectedDay, setSelectedDay] = useState(0);
     const [timeData, setTimeData] = useState({});
@@ -79,8 +76,8 @@ const TimeSheet = () => {
         if (!entrada || !salida) return 0;
         const start = new Date(`2000-01-01T${entrada}`);
         const end = new Date(`2000-01-01T${salida}`);
-        let diff = (end - start) / 3600000; // difference in hours
-        if (diff < 0) diff += 24; // if end time is on the next day
+        let diff = (end - start) / 3600000;
+        if (diff < 0) diff += 24;
         return diff;
     };
 

@@ -16,7 +16,7 @@ const StyledModalContent = styled('div')(({ theme }) => ({
     maxWidth: '90%',
     backgroundColor: theme.palette.background.paper,
     boxShadow: theme.shadows[5], // Cambio a sombra más suave (5)
-    p: theme.spacing(4), // Espacio interior más grande
+    padding: theme.spacing(4), // Espacio interior más grande
 }));
 
 const StyledTitle = styled(Typography)(({ theme }) => ({
@@ -25,7 +25,7 @@ const StyledTitle = styled(Typography)(({ theme }) => ({
 }));
 
 function CustomModal({
-    open,
+    open = false, // Valor predeterminado para evitar que sea undefined
     onClose,
     title,
     content,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 
-function useDeleteConfirmation() {
+function useDeleteConfirmation(employees, setEmployees) {
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
 
@@ -15,13 +16,31 @@ function useDeleteConfirmation() {
     };
 
     const handleConfirmDelete = async (deleteFn) => {
-        const response = await deleteFn(itemToDelete);
+        try {
+            const response = await deleteFn(itemToDelete);
 
-        setItemToDelete(null);
-        setShowConfirmation(false);
+            if (!response.success) {
+                toast.error(response.message || 'Error deleting the item.');
+                return response;
+            }
 
+            // Update the employees list after deletion
+            const updatedEmployees = employees.filter(emp => emp.employeeId !== itemToDelete);
+            setEmployees(updatedEmployees);
 
-        return response;
+            localStorage.setItem('employeeData', JSON.stringify(updatedEmployees));
+            toast.success('Employee deleted successfully.');
+
+            setItemToDelete(null);
+            setShowConfirmation(false);
+            return response;
+
+        } catch (error) {
+            toast.error('An error occurred while deleting.');
+            setItemToDelete(null);
+            setShowConfirmation(false);
+            return { success: false, message: error.message };
+        }
     };
 
     return {

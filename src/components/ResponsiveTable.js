@@ -1,21 +1,17 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import Grid from '@mui/material/Grid';
+import { Grid, Typography } from '@mui/material';
 import TableContainer from '@mui/material/TableContainer';
 import EntityCard from './EntityCard';
 import Spinner from './Spinner';
-import Loadable from 'react-loadable';
 
-const DataTable = Loadable({
-    loader: () => import('./DataTable'),
-    loading: () => Spinner,
-});
+const DataTable = lazy(() => import('./DataTable'));
 
 const ResponsiveTable = ({
-    data,
+    data = [],
     columns,
-    movilColumns,
+    movilColumns = [],
     onEdit,
     onDelete,
     getId,
@@ -23,42 +19,55 @@ const ResponsiveTable = ({
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    console.log({ columns });
 
     if (isMobile) {
         return (
             <Grid container spacing={2} sx={{ pt: 2 }}>
                 <Grid item xs={12}>
-                    {data.map((item) => (
-                        <EntityCard
-                            key={getId(item)}
-                            entity={item}
-                            actionsConfig={{
-                                handleEdit: () => onEdit(item),
-                                handleDelete: () => onDelete(getId(item)),
-                            }}
-                            fieldsConfig={movilColumns.map((column) => ({
-                                name: column.field,
-                                label: column.label,
-                                type: column.type ?? 'text',
-                            }))}
-                            sx={{ marginBottom: 2 }}
-                        />
-
-                    ))}
+                    {data.length > 0 ? (
+                        data.map((item) => (
+                            <EntityCard
+                                key={getId(item)}
+                                entity={item}
+                                actionsConfig={{
+                                    handleEdit: () => onEdit(item),
+                                    handleDelete: () => onDelete(getId(item)),
+                                }}
+                                fieldsConfig={movilColumns.length > 0 ? movilColumns.map((column) => ({
+                                    name: column.field,
+                                    label: column.label,
+                                    type: column.type ?? 'text',
+                                })) : [
+                                    { name: 'employeeCode', label: 'Código', type: 'text' },
+                                    { name: 'employeeName', label: 'Nombre', type: 'text' },
+                                    { name: 'dateOfJoining', label: 'Fecha de Ingreso', type: 'date' },
+                                    { name: 'photoFileName', label: 'Foto', type: 'image' },
+                                ]}
+                                sx={{ marginBottom: 2 }}
+                            />
+                        ))
+                    ) : (
+                        <Typography variant="body1" sx={{ textAlign: 'center', mt: 2 }}>
+                            No hay datos disponibles.
+                        </Typography>
+                    )}
                 </Grid>
             </Grid>
         );
     } else {
         return (
             <TableContainer sx={{ overflowX: 'auto', pt: 2 }}>
-                <DataTable
-                    data={data}
-                    columns={columns}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    getId={getId}
-                    isLoading={isLoading}
-                />
+                <Suspense fallback={<Spinner />}>
+                    <DataTable
+                        data={data}
+                        columns={columns}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        getId={getId}
+                        isLoading={isLoading}
+                    />
+                </Suspense>
             </TableContainer>
         );
     }
