@@ -349,9 +349,6 @@ const WeeklyReport = () => {
         try {
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            console.log('weekDays:', weekDays);
-            console.log('weeklyHours:', weeklyHours);
-
             const ws = XLSX.utils.aoa_to_sheet([
                 ['Empleado', ...weekDays, 'Total Horas'],
                 ...employeeData.map(employee => [

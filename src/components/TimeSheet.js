@@ -7,6 +7,7 @@ import es from 'date-fns/locale/es';
 import { fetchEmployees } from '../api/employeeApi.js';
 import { User, Clock, Calendar } from 'lucide-react';
 import { useTime } from '../hooks/useTime.ts';
+import { variables } from '../utils/Variables';
 
 const transformEmployees = (employees) => {
     return employees.map(employee => ({
@@ -34,7 +35,6 @@ const TimeSheet = () => {
                 const response = await apiFunction();
                 if (response.success) {
                     const transformedEmployees = transformEmployees(response.data);
-                    console.log('1: ',{ transformedEmployees });
                     setData(transformedEmployees);
                     localStorage.setItem(storageKey, JSON.stringify(transformedEmployees)); // Cambia a transformedEmployees
                 } else {
@@ -49,7 +49,6 @@ const TimeSheet = () => {
 
         useEffect(()=>{
             if (!isLoadingTimeData) {
-                console.log('2', { datatime });
                 setTimeData(datatime);
             }
         }, [isLoadingTimeData]);
@@ -95,7 +94,7 @@ const TimeSheet = () => {
         const handleSubmit = async () => {
             try {
                 // This could be an API call to register the time data in a database
-                const response = await fetch('http://localhost:5008/api/EmployeeTime/time-records', {
+                const response = await fetch(`${variables.API_URL}EmployeeTime/time-records`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -103,7 +102,7 @@ const TimeSheet = () => {
                     body: JSON.stringify(timeData),
                 });
 
-                if (!response.ok) {
+                if (!response.success) {
                     throw new Error('Failed to register time data');
                 }
             } catch (error) {

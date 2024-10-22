@@ -19,7 +19,6 @@ const ResponsiveTable = ({
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    console.log({ columns });
 
     if (isMobile) {
         return (

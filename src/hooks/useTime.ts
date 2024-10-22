@@ -34,10 +34,80 @@ export const useTime = (storageKey: string, shouldFetch: boolean = true) => {
     }
   }, [storageKey, shouldFetch]);
 
-  // Función para agregar un nuevo registro de tiempo a través de la API
+  // Función para agregar un nuevo registro de tiempo a través de la API y actualizar el estado
   const addTimeData = async (time) => {
     try {
       const response = await createTime(time);
+      if (response.success) {
+        // Extrae los nuevos datos del tiempo creado
+        const newTimeEntry = response.data;
+
+        // Actualiza el estado con el nuevo registro de tiempo
+        setTimeData((prevTimeData) => {
+          const updatedTimeData = { ...prevTimeData };
+          const date = newTimeEntry.date.split("T")[0]; // Formato YYYY-MM-DD
+          const employeeId = newTimeEntry.employeeId;
+
+          // Inicializa la fecha en el objeto result si no existe
+          if (!updatedTimeData[date]) {
+            updatedTimeData[date] = {};
+          }
+
+          // Inicializa el empleado en la fecha si no existe
+          if (!updatedTimeData[date][employeeId]) {
+            updatedTimeData[date][employeeId] = {
+              entryTime: null,
+              exitTime: null,
+              overtimeHours: null,
+              sickLeaveHours: null,
+              vacationHours: null,
+              holidayHours: null,
+              otherHours: null,
+            };
+          }
+
+          // Asigna los valores de entrada y salida
+          if (newTimeEntry.entryTime) {
+            updatedTimeData[date][employeeId].entryTime = newTimeEntry.entryTime
+              .split("T")[1]
+              .slice(0, 5); // Extrae HH:mm
+          }
+          if (newTimeEntry.exitTime) {
+            updatedTimeData[date][employeeId].exitTime = newTimeEntry.exitTime
+              .split("T")[1]
+              .slice(0, 5); // Extrae HH:mm
+          }
+
+          // Asigna horas adicionales si existen
+          if (newTimeEntry.overtimeHours) {
+            updatedTimeData[date][employeeId].overtimeHours =
+              newTimeEntry.overtimeHours;
+          }
+          if (newTimeEntry.sickLeaveHours) {
+            updatedTimeData[date][employeeId].sickLeaveHours =
+              newTimeEntry.sickLeaveHours;
+          }
+          if (newTimeEntry.vacationHours) {
+            updatedTimeData[date][employeeId].vacationHours =
+              newTimeEntry.vacationHours;
+          }
+          if (newTimeEntry.holidayHours) {
+            updatedTimeData[date][employeeId].holidayHours =
+              newTimeEntry.holidayHours;
+          }
+          if (newTimeEntry.otherHours) {
+            updatedTimeData[date][employeeId].otherHours =
+              newTimeEntry.otherHours;
+          }
+
+          // Guarda los datos actualizados en el localStorage
+          localStorage.setItem(storageKey, JSON.stringify(updatedTimeData));
+
+          return updatedTimeData;
+        });
+      } else {
+        console.error(`Failed to create time entry: ${response.message}`);
+      }
     } catch (error) {
       console.error(`An error occurred while adding time data: ${error}`);
     }

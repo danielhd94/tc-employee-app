@@ -21,7 +21,6 @@ const EntityCard = ({ entity, actionsConfig, fieldsConfig, sx }) => {
             />
         ))
 
-    console.log({ im });
     return (
         <Card elevation={3} sx={{ padding: '16px', ...sx }}>
             <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
