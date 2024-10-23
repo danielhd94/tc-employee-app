@@ -103,9 +103,9 @@ const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
 
     // Agregar fila de total de horas
     body.push([
+      { text: '', style: 'totalRow' },
+      { text: '', style: 'totalRow' },
       { text: 'TOTAL DE HORAS', style: 'totalRow', bold: true },
-      { text: '', style: 'totalRow' },
-      { text: '', style: 'totalRow' },
       { text: '', style: 'totalRow' },
       { text: '', style: 'totalRow' },
       { text: '', style: 'totalRow' },
@@ -116,11 +116,11 @@ const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
 
     // Agregar fila de tarifa por hora
     body.push([
+      { text: '', style: 'totalRow' },
+      { text: '', style: 'totalRow' },
       { text: 'TARIFA POR HORA', style: 'totalRow', bold: true },
       { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
       { text: `$${OVERTIME_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
-      { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
-      { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
       { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
       { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
       { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
@@ -129,13 +129,14 @@ const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
 
     // Agregar fila de total semanal
     // Agregar fila de totales diarios
-    const dailyTotalRow = [{ text: 'TOTAL A PAGAR POR DÍA', style: 'totalRow', bold: true }];
+    const dailyTotalRow = [];
+    dailyTotalRow.push({ text: 'TOTAL A PAGAR POR DÍA', style: 'totalRow', bold: true });
     dailyTotals.forEach(total => {
       dailyTotalRow.push({ text: `$${total.toFixed(2)}`, style: 'totalRow', bold: true });
     });
     dailyTotalRow.push({ text: `$${weeklyTotal.toFixed(2)}`, style: 'totalRow', bold: true });
     // Rellenar las celdas restantes si es necesario
-    while (dailyTotalRow.length < 9) {
+    while (dailyTotalRow.length < 5) {
       dailyTotalRow.push({ text: '', style: 'totalRow' });
     }
     body.push(dailyTotalRow);
