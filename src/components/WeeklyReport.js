@@ -21,18 +21,59 @@ import {
     Menu,
     MenuItem,
     ThemeProvider,
-    createTheme
+    createTheme,
+    IconButton
 } from '@mui/material';
 import { CircularProgress } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { es } from 'date-fns/locale';
-import { format, addDays, startOfWeek, endOfWeek, parseISO, differenceInHours } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
 import { fetchEmployees } from '../api/employeeApi.js';
 import { User, Calendar, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from 'xlsx';
+import { useTime } from '../hooks/useTime.ts';
+
+
+function transformData(inputData) {
+    const transformedData = {};
+
+    for (const date in inputData) {
+        const employees = inputData[date];
+
+        for (const empId in employees) {
+            const {
+                entryTime,
+                exitTime,
+                overtimeHours = 0,   // Valores predeterminados a 0 si no están presentes
+                sickLeaveHours = 0,
+                vacationHours = 0,
+                holidayHours = 0,
+                otherHours = 0,
+            } = employees[empId];
+
+            // Asegurarse de que el objeto del empleado exista en transformedData
+            if (!transformedData[empId]) {
+                transformedData[empId] = {};
+            }
+
+            // Crear o actualizar la entryTime para la fecha específica
+            transformedData[empId][date] = {
+                entryTime,
+                exitTime,
+                overtimeHours,
+                sickLeaveHours,
+                vacationHours,
+                holidayHours,
+                otherHours,
+            };
+        }
+    }
+
+    return transformedData;
+}
 
 // Definir una paleta de colores personalizada
 const getDesignTokens = (mode) => ({
@@ -101,12 +142,14 @@ const WeeklyReport = () => {
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const { timeData, isLoadingTimeData, addTimeData } = useTime('usetimereports', true);
 
     const fetchApiData = async () => {
         setIsLoadingData(true);
         try {
             const response = await fetchEmployees();
             if (response.success) {
+                console.log({ response: response.data });
                 const transformedEmployees = transformEmployees(response.data);
                 setEmployeeData(transformedEmployees);
                 localStorage.setItem('employeeDataReports', JSON.stringify(response.data));
@@ -125,32 +168,21 @@ const WeeklyReport = () => {
     }, []);
 
     useEffect(() => {
-        const simulatedData = {};
-        employeeData.forEach(employee => {
-            simulatedData[employee.id] = {};
-            for (let i = 0; i < 7; i++) {
-                const currentDate = format(addDays(weekStart, i), 'yyyy-MM-dd');
-                simulatedData[employee.id][currentDate] = {
-                    entrada: '08:00',
-                    salida: '17:00',
-                    horasExtra: Math.floor(Math.random() * 3),
-                    enfermedad: 0,
-                    vacaciones: 0,
-                    diasFestivos: 0,
-                    otro: 0
-                };
-            }
-        });
-        setWeeklyHours(simulatedData);
-    }, [employeeData, weekStart]);
+        if (!isLoadingTimeData) {
+            const datatime = transformData(timeData);
+            console.log({ datatime });
+            setWeeklyHours(datatime);
+        }
+    }, [isLoadingTimeData, timeData]);
+
 
     const calculateTotalHours = (employeeId) => {
         let total = 0;
         Object.values(weeklyHours[employeeId] || {}).forEach(day => {
-            const workHours = day.salida && day.entrada ?
-                (new Date(`2000-01-01T${day.salida}`) - new Date(`2000-01-01T${day.entrada}`)) / 3600000 : 0;
-            total += workHours + (day.horasExtra || 0) + (day.enfermedad || 0) +
-                (day.vacaciones || 0) + (day.diasFestivos || 0) + (day.otro || 0);
+            const workHours = day.exitTime && day.entryTime ?
+                (new Date(`2000-01-01T${day.exitTime}`) - new Date(`2000-01-01T${day.entryTime}`)) / 3600000 : 0;
+            total += workHours + (day.overtimeHours || 0) + (day.sickLeaveHours || 0) +
+                (day.vacationHours || 0) + (day.holidayHours || 0) + (day.otherHours || 0);
         });
         return total.toFixed(2);
     };
@@ -159,10 +191,6 @@ const WeeklyReport = () => {
         return (calculateTotalHours(employeeId) * rate).toFixed(2);
     };
 
-    /*const weekDays = useMemo(() => {
-        return Array(7).fill().map((_, i) => format(addDays(weekStart, i), 'dd/MM/yyyy'));
-    }, [weekStart]);
-*/
 
     const weekDays = useMemo(() => {
         return Array(7).fill().map((_, i) => format(addDays(weekStart, i), 'yyyy-MM-dd'));
@@ -216,8 +244,8 @@ const WeeklyReport = () => {
                                 <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                     <Typography variant="body2">{day}:</Typography>
                                     <Typography variant="body2">
-                                        {weeklyHours[employee.id]?.[format(addDays(weekStart, index), 'yyyy-MM-dd')]?.entrada || '-'} -
-                                        {weeklyHours[employee.id]?.[format(addDays(weekStart, index), 'yyyy-MM-dd')]?.salida || '-'}
+                                        {weeklyHours[employee.id]?.[format(addDays(weekStart, index), 'yyyy-MM-dd')]?.entryTime || '-'} -
+                                        {weeklyHours[employee.id]?.[format(addDays(weekStart, index), 'yyyy-MM-dd')]?.exitTime || '-'}
                                     </Typography>
                                 </Box>
                             ))}
@@ -243,6 +271,7 @@ const WeeklyReport = () => {
                             <TableCell key={index} align="center" sx={{ bgcolor: theme.palette.primary.main, color: theme.palette.primary.contrastText }}>{day}</TableCell>
                         ))}
                         <TableCell align="center" sx={{ bgcolor: theme.palette.primary.main, color: theme.palette.primary.contrastText }}>Total Horas</TableCell>
+                        <TableCell align="center" sx={{ bgcolor: theme.palette.primary.main, color: theme.palette.primary.contrastText }}>Acción</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -272,11 +301,8 @@ const WeeklyReport = () => {
                                     const dailyHours = calculateDailyHours(dayData);
                                     return (
                                         <TableCell key={index} align="center">
-                                            <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
-                                                {dayData?.entrada || '-'} - {dayData?.salida || '-'}
-                                            </Typography>
                                             <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                                                Total: {dailyHours} hrs
+                                                {dailyHours} hrs
                                             </Typography>
                                         </TableCell>
                                     );
@@ -285,6 +311,23 @@ const WeeklyReport = () => {
                                     <Typography variant="body2" fontWeight="bold" sx={{ color: theme.palette.primary.main }}>
                                         {totalHours}
                                     </Typography>
+                                </TableCell>
+                                <TableCell align="center">
+                                    <IconButton
+                                        onClick={downloadExcel}
+                                        disabled={isDownloading}
+                                        sx={{
+                                            height: 40,        // Ajuste de la altura
+                                            width: 40,         // Ajuste del ancho
+                                            color: 'primary.main', // Cambia el color del ícono si lo deseas
+                                        }}
+                                    >
+                                        {isDownloading ? (
+                                            <CircularProgress size={24} />  // Indicador de progreso
+                                        ) : (
+                                            <Download />  // Ícono de descarga
+                                        )}
+                                    </IconButton>
                                 </TableCell>
                             </TableRow>
                         );
@@ -295,13 +338,34 @@ const WeeklyReport = () => {
     );
 
     // Función para calcular las horas diarias
-    const calculateDailyHours = (dayData) => {
-        if (!dayData || !dayData.entrada || !dayData.salida) return '0';
-        const start = parseISO(`2000-01-01T${dayData.entrada}`);
-        const end = parseISO(`2000-01-01T${dayData.salida}`);
-        let hours = differenceInHours(end, start);
-        if (hours < 0) hours += 24; // Si el turno cruza la medianoche
-        return (hours + (dayData.horasExtra || 0)).toFixed(2);
+    const calculateDailyHours = (dayData = {}) => {
+        const {
+            entryTime,
+            exitTime,
+            overtimeHours = 0,
+            sickLeaveHours = 0,
+            vacationHours = 0,
+            holidayHours = 0,
+            otherHours = 0,
+        } = dayData;
+
+        // Si no hay horas de entrada o salida, devuelve 0
+        if (!entryTime || !exitTime) return '0';
+
+        // Convierte las horas de entrada y salida a fechas simuladas
+        const start = parseISO(`2000-01-01T${entryTime}`);
+        const end = parseISO(`2000-01-01T${exitTime}`);
+
+        // Calcula la diferencia en minutos y convierte a horas
+        let minutesDifference = differenceInMinutes(end, start);
+        if (minutesDifference < 0) minutesDifference += 24 * 60; // Ajuste si cruza la medianoche
+        const workHours = minutesDifference / 60;
+
+        // Suma las horas adicionales (extra, enfermedad, vacaciones, etc.)
+        const totalHours = workHours + overtimeHours + sickLeaveHours + vacationHours + holidayHours + otherHours;
+
+        // Retorna el resultado formateado con dos decimales
+        return totalHours.toFixed(2);
     };
 
     const handleDownloadClick = (event) => {
@@ -321,7 +385,7 @@ const WeeklyReport = () => {
                 employee.name,
                 ...weekDays.map(day => {
                     const currentDate = format(new Date(day), 'yyyy-MM-dd');
-                    return `${weeklyHours[employee.id]?.[currentDate]?.entrada || '-'} - ${weeklyHours[employee.id]?.[currentDate]?.salida || '-'}`;
+                    return `${weeklyHours[employee.id]?.[currentDate]?.entryTime || '-'} - ${weeklyHours[employee.id]?.[currentDate]?.exitTime || '-'}`;
                 }),
                 calculateTotalHours(employee.id),
                 `$${calculateTotalPay(employee.id, employee.rate)}`
@@ -356,7 +420,7 @@ const WeeklyReport = () => {
                     ...weekDays.map(day => {
                         const currentDate = safeDateFormat(day, 'yyyy-MM-dd');
                         const dayData = weeklyHours[employee.id]?.[currentDate];
-                        return dayData ? `${dayData.entrada || '-'} - ${dayData.salida || '-'}` : '-';
+                        return dayData ? `${dayData.entryTime || '-'} - ${dayData.exitTime || '-'}` : '-';
                     }),
                     calculateTotalHours(employee.id),
                 ])
