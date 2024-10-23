@@ -1,16 +1,14 @@
 import React from "react";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
-import {
-  IconButton
-} from '@mui/material';
+import { IconButton } from '@mui/material';
 import { Download } from 'lucide-react';
 
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-
-
 const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
+  const REGULAR_RATE = 18.00;
+  const OVERTIME_RATE = 25.00;
 
   const calculateTotalHours = (reportDate) => {
     let total = 0;
@@ -22,10 +20,10 @@ const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
     });
     return total.toFixed(2);
   };
+
   const calculateTotalHoursDay = (day) => {
     let total = 0;
     const hoursData = Object.values(hours || {}).filter(item => item.date === day);
-
 
     hoursData.forEach(day => {
       const workHours = day.exitTime && day.entryTime ?
@@ -36,10 +34,16 @@ const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
     return total.toFixed(2);
   };
 
+  const calculateDailyPay = (hours, overtimeHours) => {
+    const regularPay = hours * REGULAR_RATE;
+    const overtimePay = overtimeHours * OVERTIME_RATE;
+    return regularPay + overtimePay;
+  };
+
   const generatePDF = () => {
     if (!reportDates || reportDates.length === 0) {
       console.error("No report dates provided");
-      return; // Detener la ejecución si no hay fechas
+      return;
     }
 
     const {
@@ -64,6 +68,9 @@ const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
       ],
     ];
 
+    let weeklyTotal = 0;
+    const dailyTotals = [];
+
     reportDates.forEach(reportDate => {
       const filteredHours = employeeHours.filter(hour => hour.date === reportDate);
       const employeeHoursForDate = filteredHours.length > 0 ? filteredHours[0] : {};
@@ -77,6 +84,10 @@ const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
       const otherHours = employeeHoursForDate.otherHours || 0;
       const totalHours = calculateTotalHoursDay(reportDate) || 0;
 
+      const dailyPay = calculateDailyPay(totalHours - overtimeHours, overtimeHours);
+      weeklyTotal += dailyPay;
+      dailyTotals.push(dailyPay);
+
       body.push([
         reportDate,
         entryTime,
@@ -89,6 +100,45 @@ const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
         totalHours,
       ]);
     });
+
+    // Agregar fila de total de horas
+    body.push([
+      { text: 'TOTAL DE HORAS', style: 'totalRow', bold: true },
+      { text: '', style: 'totalRow' },
+      { text: '', style: 'totalRow' },
+      { text: '', style: 'totalRow' },
+      { text: '', style: 'totalRow' },
+      { text: '', style: 'totalRow' },
+      { text: '', style: 'totalRow' },
+      { text: '', style: 'totalRow' },
+      { text: calculateTotalHours(), style: 'totalRow', bold: true },
+    ]);
+
+    // Agregar fila de tarifa por hora
+    body.push([
+      { text: 'TARIFA POR HORA', style: 'totalRow', bold: true },
+      { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
+      { text: `$${OVERTIME_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
+      { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
+      { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
+      { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
+      { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
+      { text: `$${REGULAR_RATE.toFixed(2)}`, style: 'totalRow', bold: true },
+      { text: `TOTAL A PAGAR POR SEMANA`, style: 'totalRow', bold: true },
+    ]);
+
+    // Agregar fila de total semanal
+    // Agregar fila de totales diarios
+    const dailyTotalRow = [{ text: 'TOTAL A PAGAR POR DÍA', style: 'totalRow', bold: true }];
+    dailyTotals.forEach(total => {
+      dailyTotalRow.push({ text: `$${total.toFixed(2)}`, style: 'totalRow', bold: true });
+    });
+    dailyTotalRow.push({ text: `$${weeklyTotal.toFixed(2)}`, style: 'totalRow', bold: true });
+    // Rellenar las celdas restantes si es necesario
+    while (dailyTotalRow.length < 9) {
+      dailyTotalRow.push({ text: '', style: 'totalRow' });
+    }
+    body.push(dailyTotalRow);
 
     const docDefinition = {
       pageSize: 'letter',
@@ -174,6 +224,11 @@ const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
           fontSize: 10,
           margin: [0, 5, 0, 5],
         },
+        totalRow: {
+          fontSize: 11,
+          alignment: 'center',
+          margin: [0, 5, 0, 5],
+        }
       },
       defaultStyle: {
         font: 'Roboto',
@@ -181,16 +236,15 @@ const EmployeeReportPDF = ({ employee, hours, reportDates }) => {
     };
 
     pdfMake.createPdf(docDefinition).download(`employee_report_${reportDates[0]}.pdf`);
-
   };
 
   return (
     <IconButton
       onClick={generatePDF}
       sx={{
-        height: 40,        // Ajuste de la altura
-        width: 40,         // Ajuste del ancho
-        color: 'primary.main', // Cambia el color del ícono si lo deseas
+        height: 40,
+        width: 40,
+        color: 'primary.main',
       }}
     >
       <Download />
