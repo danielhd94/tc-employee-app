@@ -35,7 +35,24 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { useTime } from '../hooks/useTime.ts';
+import EmployeeReportPDF from './EmployeeReportPDF.js';
 
+const convertHoursDataToArray = (hoursData) => {
+    return Object.entries(hoursData).flatMap(([date, employees]) => {
+        return Object.entries(employees).map(([employeeId, hours]) => ({
+            date,
+            employeeId,
+            ...hours, // Aquí expandimos las horas
+        }));
+    });
+};
+
+function transformToArray(inputObject, employeeId) {
+    return Object.entries(inputObject[employeeId]).map(([date, hours]) => ({
+        date,
+        ...hours
+    }));
+}
 
 function transformData(inputData) {
     const transformedData = {};
@@ -136,6 +153,7 @@ const WeeklyReport = () => {
     const [weekStart, setWeekStart] = useState(startOfWeek(new Date()));
     const [employeeIdFilter, setEmployeeIdFilter] = useState('');
     const [employeeData, setEmployeeData] = useState([]);
+    const [employeeData2, setEmployeeData2] = useState([]);
     const [weeklyHours, setWeeklyHours] = useState({});
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [anchorEl, setAnchorEl] = useState(null);
@@ -149,9 +167,9 @@ const WeeklyReport = () => {
         try {
             const response = await fetchEmployees();
             if (response.success) {
-                console.log({ response: response.data });
                 const transformedEmployees = transformEmployees(response.data);
                 setEmployeeData(transformedEmployees);
+                setEmployeeData2(response.data);
                 localStorage.setItem('employeeDataReports', JSON.stringify(response.data));
             } else {
                 console.error('Failed to fetch employee data');
@@ -170,7 +188,6 @@ const WeeklyReport = () => {
     useEffect(() => {
         if (!isLoadingTimeData) {
             const datatime = transformData(timeData);
-            console.log({ datatime });
             setWeeklyHours(datatime);
         }
     }, [isLoadingTimeData, timeData]);
@@ -225,6 +242,11 @@ const WeeklyReport = () => {
             {filteredEmployees.map((employee) => {
                 const totalHours = calculateTotalHours(employee.id);
                 const totalPay = calculateTotalPay(employee.id, employee.rate);
+                const hours = {
+                    [employee.id]: {
+                        ...weeklyHours[employee.id]
+                    }
+                };
                 return (
                     <Card key={employee.id} sx={{ width: '100%' }}>
                         <CardContent>
@@ -232,11 +254,19 @@ const WeeklyReport = () => {
                                 <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
                                     <User />
                                 </Avatar>
-                                <Box>
+                                <Box sx={{ flexGrow: 1 }}>
                                     <Typography variant="h6">{employee.name}</Typography>
                                     <Typography variant="caption" color="text.secondary">
                                         {employee.employeeCode}
                                     </Typography>
+                                </Box>
+                                {/* Coloca el botón de descarga y el PDF juntos en un Box */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}> {/* Añadir margen a la izquierda */}
+                                    <EmployeeReportPDF
+                                        employee={employee}
+                                        hours={transformToArray(hours, employee.id)}
+                                        reportDates={weekDays}
+                                    />
                                 </Box>
                             </Box>
                             <Divider sx={{ my: 1 }} />
@@ -278,6 +308,11 @@ const WeeklyReport = () => {
                     {filteredEmployees.map((employee) => {
                         const totalHours = calculateTotalHours(employee.id);
                         const totalPay = calculateTotalPay(employee.id, employee.rate);
+                        const hours = {
+                            [employee.id]: {
+                                ...weeklyHours[employee.id]
+                            }
+                        };
                         return (
                             <TableRow key={employee.id} sx={{ '&:nth-of-type(odd)': { bgcolor: theme.palette.action.hover } }}>
                                 <TableCell component="th" scope="row">
@@ -313,21 +348,7 @@ const WeeklyReport = () => {
                                     </Typography>
                                 </TableCell>
                                 <TableCell align="center">
-                                    <IconButton
-                                        onClick={downloadExcel}
-                                        disabled={isDownloading}
-                                        sx={{
-                                            height: 40,        // Ajuste de la altura
-                                            width: 40,         // Ajuste del ancho
-                                            color: 'primary.main', // Cambia el color del ícono si lo deseas
-                                        }}
-                                    >
-                                        {isDownloading ? (
-                                            <CircularProgress size={24} />  // Indicador de progreso
-                                        ) : (
-                                            <Download />  // Ícono de descarga
-                                        )}
-                                    </IconButton>
+                                    <EmployeeReportPDF employee={employee} hours={transformToArray(hours, employee.id)} reportDates={weekDays}/>
                                 </TableCell>
                             </TableRow>
                         );
@@ -436,7 +457,6 @@ const WeeklyReport = () => {
         }
     };
 
-
     return (
         <ThemeProvider theme={theme}>
             <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
@@ -457,7 +477,7 @@ const WeeklyReport = () => {
                             color: 'text.primary'
                         }}
                     >
-                        RH KOLAVAL - REPORTE SEMANAL DE HORAS
+                        RH KOLABAL - REPORTE SEMANAL DE HORAS
                     </Typography>
                     <Grid container spacing={2} justifyContent="center" sx={{ mb: { xs: 2, sm: 4 } }}>
                         <Grid item xs={12} sm={6} md={4}>
@@ -514,7 +534,7 @@ const WeeklyReport = () => {
                                 onClick={downloadExcel}
                                 disabled={isDownloading}
                             >
-                                {isDownloading ? 'Generando Excel...' : 'Descargar Reporte'}
+                                {isDownloading ? 'Generando Excel...' : 'Descargar Reporte Semanal'}
                             </Button>
                             <Menu
                                 anchorEl={anchorEl}

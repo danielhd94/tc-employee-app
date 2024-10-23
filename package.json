@@ -21,6 +21,7 @@
     "lodash": "4.17.21",
     "lucide-react": "0.453.0",
     "mssql": "9.3.2",
+    "pdfmake": "0.2.14",
     "prop-types": "15.8.1",
     "react": "^18.2.0",
     "react-chartjs-2": "5.2.0",
